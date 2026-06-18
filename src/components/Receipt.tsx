@@ -1,0 +1,301 @@
+import { useRef, useState } from 'react';
+import { format } from 'date-fns';
+import { id, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
+import html2canvas from 'html2canvas';
+import { Download, Share2, Printer } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import type { Transaction, StoreSettings, TransactionItemRecord } from '@/lib/db';
+import { isNativePlatform, printNativeBluetooth, getESCPOSData } from '@/lib/printer';
+
+const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
+
+interface ReceiptProps {
+  open: boolean;
+  onClose: () => void;
+  transaction: Transaction;
+  items: TransactionItemRecord[];
+  storeSettings: StoreSettings | undefined;
+  paymentMethodName: string;
+  cashierName?: string;
+}
+
+export default function Receipt({ open, onClose, transaction, items, storeSettings, paymentMethodName, cashierName }: ReceiptProps) {
+  const { t, i18n } = useTranslation('settings');
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const dateLocale = LOCALES[i18n.language] || id;
+  const numberLocale = NUMBER_LOCALES[i18n.language] || 'id-ID';
+
+  const rp = (n: number) => `Rp ${n.toLocaleString(numberLocale)}`;
+
+  const storeName = storeSettings?.storeName || t('receipt.storeFallback');
+
+  const captureReceipt = async (): Promise<HTMLCanvasElement | null> => {
+    if (!receiptRef.current) return null;
+    setGenerating(true);
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      return canvas;
+    } catch {
+      toast.error(t('receipt.toast.captureError'));
+      return null;
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    const canvas = await captureReceipt();
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `struk-${transaction.receiptNumber}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast.success(t('receipt.toast.downloadSuccess'));
+  };
+
+  const handleShare = async () => {
+    const canvas = await captureReceipt();
+    if (!canvas) return;
+
+    try {
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) return;
+
+      if (navigator.share) {
+        const file = new File([blob], `struk-${transaction.receiptNumber}.png`, { type: 'image/png' });
+        await navigator.share({
+          title: t('receipt.shareTitle', { receiptNumber: transaction.receiptNumber }),
+          text: t('receipt.shareText', { storeName }),
+          files: [file],
+        });
+      } else {
+        const text = encodeURIComponent(
+          t('receipt.whatsappFallback', {
+            storeName,
+            receiptNumber: transaction.receiptNumber,
+            total: rp(transaction.total),
+            date: format(new Date(transaction.date), 'dd MMM yyyy HH:mm', { locale: dateLocale }),
+          })
+        );
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        toast.error(t('receipt.toast.shareFailed'));
+      }
+    }
+  };
+
+  const handleBluetoothPrint = async () => {
+    const printData = { transaction, items, storeSettings, paymentMethodName, cashierName };
+
+    if (isNativePlatform()) {
+      await printNativeBluetooth(printData, toast);
+      return;
+    }
+
+    if (!('bluetooth' in navigator)) {
+      toast.error(t('receipt.toast.bluetoothUnavailable'));
+      return;
+    }
+
+    try {
+      toast.info(t('receipt.toast.searchingPrinter'));
+      // @ts-expect-error Web Bluetooth API is not fully typed in TypeScript
+      const device = await navigator.bluetooth.requestDevice({
+        filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
+        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'],
+      });
+
+      const server = await device.gatt.connect();
+      const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+      const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+      const data = new TextEncoder().encode(getESCPOSData(printData));
+      
+      for (let i = 0; i < data.length; i += 100) {
+        const chunk = data.slice(i, i + 100);
+        await characteristic.writeValue(chunk);
+      }
+
+      toast.success(t('receipt.toast.printSuccess'));
+      await server.disconnect();
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'NotFoundError') {
+        toast.error(t('receipt.toast.printFailed'));
+      }
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl p-4">
+        <DialogHeader>
+          <DialogTitle className="text-center">{t('receipt.title')}</DialogTitle>
+        </DialogHeader>
+
+        {/* Receipt preview - captured as image */}
+        <div ref={receiptRef} className="bg-white text-black mx-auto rounded-lg overflow-hidden" style={{ width: '300px', fontFamily: "'Plus Jakarta Sans', 'Helvetica Neue', Arial, sans-serif" }}>
+
+          {/* ── Header Maroon ── */}
+          <div style={{ background: 'linear-gradient(135deg, #6e150f 0%, #b92a1c 100%)', padding: '16px', textAlign: 'center', color: 'white' }}>
+            {storeSettings?.logo ? (
+              <img src={storeSettings.logo} alt={storeName} style={{ width: '52px', height: '52px', objectFit: 'contain', borderRadius: '8px', margin: '0 auto 8px', background: 'white', padding: '4px' }} />
+            ) : (
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', margin: '0 auto 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 'bold' }}>
+                {storeName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <p style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '0.3px', margin: 0 }}>{storeName}</p>
+            {storeSettings?.address && <p style={{ fontSize: '10px', opacity: 0.85, marginTop: '2px', margin: 0 }}>{storeSettings.address}</p>}
+            {storeSettings?.phone && <p style={{ fontSize: '10px', opacity: 0.85, marginTop: '1px', margin: 0 }}>📞 {storeSettings.phone}</p>}
+          </div>
+
+          {/* ── Receipt Info ── */}
+          <div style={{ padding: '10px 14px 6px', background: '#FFF8F7', borderBottom: '1px dashed #d0a139' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#555' }}>
+              <span>No.</span>
+              <span style={{ fontWeight: 700, color: '#6e150f' }}>{transaction.receiptNumber}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#555', marginTop: '2px' }}>
+              <span>Tanggal</span>
+              <span>{format(new Date(transaction.date), 'dd MMM yyyy, HH:mm', { locale: dateLocale })}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#555', marginTop: '2px' }}>
+              <span>Pembayaran</span>
+              <span style={{ fontWeight: 600 }}>{paymentMethodName}</span>
+            </div>
+            {cashierName && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#555', marginTop: '2px' }}>
+                <span>Kasir</span><span>{cashierName}</span>
+              </div>
+            )}
+            {transaction.customerName && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#555', marginTop: '2px' }}>
+                <span>Pelanggan</span><span>{transaction.customerName}</span>
+              </div>
+            )}
+            {transaction.tableNumber && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#555', marginTop: '2px' }}>
+                <span>Meja</span><span style={{ fontWeight: 600 }}>#{transaction.tableNumber}</span>
+              </div>
+            )}
+            {transaction.remarks && (
+              <div style={{ fontSize: '10px', color: '#555', marginTop: '2px' }}>
+                <span>Catatan: {transaction.remarks}</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Items ── */}
+          <div style={{ padding: '10px 14px' }}>
+            {items.map((item, i) => (
+              <div key={i} style={{ marginBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 700, flex: 1, marginRight: '8px', margin: 0, color: '#1A1A1A' }}>
+                    {item.productName}
+                  </p>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#6e150f', whiteSpace: 'nowrap' }}>
+                    {rp(item.subtotal)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#666', marginTop: '1px' }}>
+                  <span>{item.quantity} × {rp(item.price)}</span>
+                </div>
+                {/* Notes (sub-menu selections stored as notes) */}
+                {item.notes && (
+                  <p style={{ fontSize: '9px', color: '#b92a1c', fontStyle: 'italic', marginTop: '2px', margin: 0 }}>
+                    ↳ {item.notes}
+                  </p>
+                )}
+                {item.discountAmount > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#d0a139', marginTop: '1px' }}>
+                    <span>  Diskon</span>
+                    <span>-{rp(item.discountAmount)}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* ── Totals ── */}
+          <div style={{ borderTop: '1px dashed #d0a139', margin: '0 14px', padding: '8px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#555', marginBottom: '3px' }}>
+              <span>Subtotal</span>
+              <span>{rp(transaction.subtotal)}</span>
+            </div>
+            {transaction.discountAmount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#b92a1c', marginBottom: '3px' }}>
+                <span>Diskon</span>
+                <span>-{rp(transaction.discountAmount)}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 800, color: '#6e150f', borderTop: '2px solid #6e150f', paddingTop: '6px', marginTop: '4px' }}>
+              <span>TOTAL</span>
+              <span>{rp(transaction.total)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#555', marginTop: '4px' }}>
+              <span>Bayar</span>
+              <span>{rp(transaction.paymentAmount)}</span>
+            </div>
+            {transaction.debtAmount && transaction.debtAmount > 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#b92a1c', marginTop: '2px' }}>
+                <span>Sisa Hutang</span>
+                <span>{rp(transaction.debtAmount)}</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#555', marginTop: '2px' }}>
+                <span>Kembalian</span>
+                <span style={{ fontWeight: 700, color: '#2a9d5c' }}>{rp(transaction.change)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Footer ── */}
+          <div style={{ background: '#FFF8F7', borderTop: '1px dashed #d0a139', padding: '10px 14px', textAlign: 'center' }}>
+            <p style={{ fontSize: '11px', color: '#555', margin: 0 }}>
+              {storeSettings?.receiptFooter || t('receipt.footerFallback')}
+            </p>
+            <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #eee' }}>
+              <p style={{ fontSize: '9px', color: '#b92a1c', fontWeight: 700, margin: 0, letterSpacing: '0.5px' }}>
+                ✦ Powered by Inspira POS ✦
+              </p>
+              <p style={{ fontSize: '8px', color: '#999', margin: 0 }}>inspiralabs.id</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="grid grid-cols-3 gap-2 mt-3">
+          <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={handleDownload} disabled={generating}>
+            <Download className="w-5 h-5" />
+            <span className="text-[10px]">{t('receipt.download')}</span>
+          </Button>
+          <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={handleShare} disabled={generating}>
+            <Share2 className="w-5 h-5" />
+            <span className="text-[10px]">{t('receipt.share')}</span>
+          </Button>
+          <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={handleBluetoothPrint} disabled={generating}>
+            <Printer className="w-5 h-5" />
+            <span className="text-[10px]">{t('receipt.print')}</span>
+          </Button>
+        </div>
+
+        <Button variant="secondary" className="w-full mt-1" onClick={onClose}>
+          {t('receipt.done')}
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+}

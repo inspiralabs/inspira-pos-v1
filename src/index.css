@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Inspira POS Color Palette
+     * Maroon Deep:    #6e150f  → HSL 4 72% 25%
+     * Maroon Vibrant: #b92a1c  → HSL 5 73% 41%
+     * Gold Antique:   #d0a139  → HSL 40 64% 52%
+     * Gold Bright:    #fad64a  → HSL 47 95% 64%
+     * Cream:          #F5EFE6  → HSL 36 53% 93%
+     */
+    --background: 36 53% 96%;
+    --foreground: 10 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 10 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 10 25% 10%;
+
+    /* Maroon Deep as primary */
+    --primary: 4 72% 25%;
+    --primary-foreground: 36 53% 96%;
+
+    --secondary: 36 40% 92%;
+    --secondary-foreground: 4 72% 25%;
+
+    --muted: 36 30% 92%;
+    --muted-foreground: 10 15% 45%;
+
+    /* Gold Antique as accent */
+    --accent: 40 64% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 36 20% 86%;
+    --input: 36 20% 86%;
+    --ring: 4 72% 25%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 36 53% 96%;
+    --sidebar-foreground: 10 25% 20%;
+    --sidebar-primary: 4 72% 25%;
+    --sidebar-primary-foreground: 36 53% 96%;
+    --sidebar-accent: 40 64% 52%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 36 20% 86%;
+    --sidebar-ring: 4 72% 25%;
+  }
+
+  .dark {
+    --background: 10 30% 8%;
+    --foreground: 36 53% 93%;
+
+    --card: 10 25% 12%;
+    --card-foreground: 36 53% 93%;
+
+    --popover: 10 25% 12%;
+    --popover-foreground: 36 53% 93%;
+
+    /* Maroon Vibrant for dark mode */
+    --primary: 5 73% 41%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 10 20% 18%;
+    --secondary-foreground: 36 40% 88%;
+
+    --muted: 10 20% 18%;
+    --muted-foreground: 36 20% 58%;
+
+    /* Gold Antique accent in dark */
+    --accent: 40 64% 52%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --border: 10 20% 22%;
+    --input: 10 20% 22%;
+    --ring: 5 73% 41%;
+
+    --sidebar-background: 10 30% 6%;
+    --sidebar-foreground: 36 40% 90%;
+    --sidebar-primary: 5 73% 41%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 64% 52%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 10 20% 20%;
+    --sidebar-ring: 5 73% 41%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+
+  html, body {
+    overflow-y: auto;
+    height: 100%;
+  }
+
+  /* PWA safe area */
+  html {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  html.is-native {
+    padding-top: max(env(safe-area-inset-top), 12px);
+  }
+
+  html.is-native [data-sonner-toaster][data-y-position="top"] {
+    top: max(env(safe-area-inset-top), 36px) !important;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

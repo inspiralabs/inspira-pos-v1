@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Inspira POS</string>
+    <string name="title_activity_main">Inspira POS</string>
+    <string name="package_name">com.inspirapos.app</string>
+    <string name="custom_url_scheme">com.inspirapos.app</string>
+</resources>
