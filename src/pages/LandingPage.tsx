@@ -194,7 +194,7 @@ export default function LandingPage() {
 
           <div className="hidden md:flex items-center gap-4">
             <Link 
-              to="/" 
+              to="/dashboard" 
               className="inline-flex items-center justify-center rounded-full text-sm font-bold h-10 px-5 bg-gradient-to-r from-[#6e150f] to-[#b92a1c] text-[#F5EFE6] hover:shadow-lg hover:shadow-[#6e150f]/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
             >
               Mulai Jualan (Demo)
@@ -225,7 +225,7 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('faq')} className="text-left py-2 font-semibold hover:text-[#6e150f]">FAQ</button>
               <hr className="border-[#6e150f]/10" />
               <Link 
-                to="/" 
+                to="/dashboard" 
                 className="inline-flex items-center justify-center rounded-full font-bold h-11 bg-gradient-to-r from-[#6e150f] to-[#b92a1c] text-[#F5EFE6] text-center"
               >
                 Mulai Jualan (Demo)
@@ -265,7 +265,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                 <Link 
-                  to="/" 
+                  to="/dashboard" 
                   className="inline-flex items-center justify-center gap-2 rounded-full font-bold h-12 px-8 bg-[#6e150f] hover:bg-[#b92a1c] text-[#F5EFE6] shadow-xl shadow-[#6e150f]/10 hover:shadow-[#6e150f]/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Coba Aplikasi Sekarang <ArrowRight className="w-4 h-4" />
@@ -523,7 +523,7 @@ export default function LandingPage() {
               </ul>
 
               <Link 
-                to="/" 
+                to="/dashboard" 
                 className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 border-2 border-[#6e150f]/20 text-[#6e150f] hover:border-[#6e150f] hover:bg-[#6e150f]/5 transition-all text-center"
               >
                 Mulai Trial 30 Hari
@@ -600,7 +600,7 @@ export default function LandingPage() {
               </ul>
 
               <Link 
-                to="/" 
+                to="/dashboard" 
                 className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 bg-gradient-to-r from-[#6e150f] to-[#b92a1c] text-[#F5EFE6] hover:shadow-lg hover:shadow-[#6e150f]/20 transition-all text-center"
               >
                 Mulai Trial Pro 30 Hari
@@ -859,7 +859,7 @@ export default function LandingPage() {
           <div>
             <h4 className="text-white text-sm font-bold mb-4">Produk &amp; Layanan</h4>
             <ul className="space-y-2 text-xs">
-              <li><Link to="/" className="hover:text-white transition-colors">Aplikasi Kasir POS</Link></li>
+              <li><Link to="/dashboard" className="hover:text-white transition-colors">Aplikasi Kasir POS</Link></li>
               <li><a href="https://inspiralabs.id/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Inspira Labs Ecosystem</a></li>
               <li><a href="https://inspiralabs.id/kontak" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Custom System Development</a></li>
             </ul>

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 const navItems = [
-  { to: '/', icon: Home, key: 'nav.home' as const },
+  { to: '/dashboard', icon: Home, key: 'nav.home' as const },
   { to: '/products', icon: Package, key: 'nav.products' as const },
   { to: '/cashier', icon: ShoppingCart, key: 'nav.cashier' as const, isCta: true },
   { to: '/reports', icon: BarChart3, key: 'nav.reports' as const },
@@ -21,7 +21,7 @@ export default function BottomNav() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/dashboard'}
             className={({ isActive }) =>
               cn(
                 'flex flex-col items-center gap-0.5 transition-colors min-w-[52px]',

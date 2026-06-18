@@ -74,7 +74,7 @@ const App = () => {
               <Routes>
                 <Route element={<AppLayout />}>
                   <Route
-                    path="/"
+                    path="/dashboard"
                     element={
                       <ErrorBoundary>
                         <Dashboard />
@@ -267,7 +267,7 @@ const App = () => {
                   />
                 </Route>
                 <Route
-                  path="/landing"
+                  path="/"
                   element={
                     <ErrorBoundary>
                       <LandingPage />
