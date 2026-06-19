@@ -1,4 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -80,14 +82,36 @@ const hoverScaleVariants = {
 };
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const isRedirecting = useRef(false);
+
+  // Deteksi mode PWA standalone atau native Capacitor.
+  // Jika terdeteksi, langsung arahkan ke /dashboard agar user
+  // yang membuka app dari home screen tidak melihat landing page.
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+      document.referrer.includes('android-app://') ||
+      Capacitor.isNativePlatform();
+
+    if (isStandalone) {
+      isRedirecting.current = true;
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
+
+  // Jangan render apapun saat akan redirect supaya tidak ada flash landing page
+  if (isRedirecting.current) return null;
+
   const [billingMode, setBillingMode] = useState<'monthly' | 'annual' | 'lifetime'>('monthly');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'fitur' | 'dashboard' | 'operasional'>('all');
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(1); // FAQ 'Bisa tanpa internet?' dibuka secara default
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Typewriter effect states
-  const words = useMemo(() => ["Mudah & Cepat", "Offline-First", "Lebih Praktis", "Aman & Akurat"], []);
+  const words = useMemo(() => ["Mudah & Cepat", "Secara Offline", "Lebih Praktis", "Aman & Akurat"], []);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentText, setCurrentText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -185,11 +209,11 @@ export default function LandingPage() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-[#1A1A1A]/80">
-            <button onClick={() => scrollToSection('features')} className="hover:text-[#6e150f] transition-colors">Fitur</button>
-            <button onClick={() => scrollToSection('pricing')} className="hover:text-[#6e150f] transition-colors">Harga</button>
-            <button onClick={() => scrollToSection('addons')} className="hover:text-[#6e150f] transition-colors">Add-ons</button>
-            <button onClick={() => scrollToSection('faq')} className="hover:text-[#6e150f] transition-colors">FAQ</button>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-[#1A1A1A]">
+            <button onClick={() => scrollToSection('features')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">Fitur</button>
+            <button onClick={() => scrollToSection('pricing')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">Harga</button>
+            <button onClick={() => scrollToSection('addons')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">Add-ons</button>
+            <button onClick={() => scrollToSection('faq')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">FAQ</button>
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
@@ -219,10 +243,10 @@ export default function LandingPage() {
               exit={{ opacity: 0, height: 0 }}
               className="md:hidden border-t border-[#6e150f]/10 bg-[#F5EFE6] p-4 flex flex-col gap-4 overflow-hidden"
             >
-              <button onClick={() => scrollToSection('features')} className="text-left py-2 font-semibold hover:text-[#6e150f]">Fitur</button>
-              <button onClick={() => scrollToSection('pricing')} className="text-left py-2 font-semibold hover:text-[#6e150f]">Harga</button>
-              <button onClick={() => scrollToSection('addons')} className="text-left py-2 font-semibold hover:text-[#6e150f]">Add-ons</button>
-              <button onClick={() => scrollToSection('faq')} className="text-left py-2 font-semibold hover:text-[#6e150f]">FAQ</button>
+              <button onClick={() => scrollToSection('features')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">Fitur</button>
+              <button onClick={() => scrollToSection('pricing')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">Harga</button>
+              <button onClick={() => scrollToSection('addons')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">Add-ons</button>
+              <button onClick={() => scrollToSection('faq')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">FAQ</button>
               <hr className="border-[#6e150f]/10" />
               <Link 
                 to="/dashboard" 
@@ -249,16 +273,12 @@ export default function LandingPage() {
               transition={{ duration: 0.6, ease: "easeOut" }}
               className="lg:col-span-6 flex flex-col text-center lg:text-left items-center lg:items-start space-y-6"
             >
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-[#6e150f]/10 text-[#6e150f] border border-[#6e150f]/20 uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5 text-[#d0a139] animate-pulse" /> Smart POS untuk UMKM Indonesia 🇮🇩
-              </div>
               <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-[1.15] text-[#1A1A1A]">
                 Kelola Penjualan <br className="hidden sm:inline" />
                 <span className="bg-gradient-to-r from-[#6e150f] to-[#b92a1c] bg-clip-text text-transparent inline-flex items-center min-h-[1.25em] border-r-2 border-[#b92a1c] pr-1">
                   {currentText}
                 </span>{" "}
                 <br />
-                Secara Offline
               </h1>
               <p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-lg">
                 Aplikasi kasir modern yang offline-first, cepat, dan siap mengelola penjualan, diskon produk, variasi menu (modifier), hingga laporan keuangan harian bisnis Anda tanpa bergantung internet.
@@ -341,7 +361,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#6e150f]/10 text-[#6e150f] mb-5 group-hover:bg-[#6e150f] group-hover:text-[#F5EFE6] transition-colors">
                 <WifiOff className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold mb-2 text-[#1A1A1A]">100% Offline-First</h3>
+              <h3 className="text-lg font-bold mb-2 text-[#1A1A1A]">100% Offline</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Tetap bisa jualan tanpa internet. Data transaksi tersimpan aman di peranti Anda dan disinkronkan otomatis saat online.
               </p>
@@ -420,40 +440,42 @@ export default function LandingPage() {
               <button 
                 onClick={() => setBillingMode('monthly')}
                 className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative ${
-                  billingMode === 'monthly' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A]/70 hover:text-[#6e150f]'
+                  billingMode === 'monthly' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
                 }`}
               >
                 {billingMode === 'monthly' && (
-                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full -z-10" />
+                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full z-0" />
                 )}
-                SaaS Bulanan
+                <span className="relative z-10">SaaS Bulanan</span>
               </button>
               <button 
                 onClick={() => setBillingMode('annual')}
                 className={`relative px-5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
-                  billingMode === 'annual' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A]/70 hover:text-[#6e150f]'
+                  billingMode === 'annual' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
                 }`}
               >
                 {billingMode === 'annual' && (
-                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full -z-10" />
+                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full z-0" />
                 )}
-                SaaS Tahunan
-                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none transition-colors ${
-                  billingMode === 'annual' ? 'bg-[#d0a139] text-[#1A1A1A]' : 'bg-[#6e150f]/10 text-[#6e150f]'
-                }`}>
-                  Hemat!
+                <span className="relative z-10 flex items-center gap-1">
+                  SaaS Tahunan
+                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none transition-colors ${
+                    billingMode === 'annual' ? 'bg-[#d0a139] text-[#1A1A1A]' : 'bg-[#6e150f]/10 text-[#6e150f]'
+                  }`}>
+                    Hemat!
+                  </span>
                 </span>
               </button>
               <button 
                 onClick={() => setBillingMode('lifetime')}
                 className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative ${
-                  billingMode === 'lifetime' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A]/70 hover:text-[#6e150f]'
+                  billingMode === 'lifetime' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
                 }`}
               >
                 {billingMode === 'lifetime' && (
-                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full -z-10" />
+                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full z-0" />
                 )}
-                Beli Putus (Lifetime)
+                <span className="relative z-10">Beli Putus (Lifetime)</span>
               </button>
             </div>
           </motion.div>
@@ -650,12 +672,16 @@ export default function LandingPage() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className="px-4 py-2 rounded-lg text-xs font-bold capitalize transition-all relative"
+                  className={`px-4 py-2 rounded-lg text-xs font-bold capitalize transition-all relative ${
+                    selectedCategory === cat
+                      ? 'text-[#F5EFE6]'
+                      : 'text-[#1A1A1A] hover:text-[#b92a1c]'
+                  }`}
                 >
                   {selectedCategory === cat && (
-                    <motion.div layoutId="activeAddonTab" className="absolute inset-0 bg-[#6e150f] rounded-lg -z-10" />
+                    <motion.div layoutId="activeAddonTab" className="absolute inset-0 bg-[#6e150f] rounded-lg z-0" />
                   )}
-                  <span className={selectedCategory === cat ? 'text-[#F5EFE6]' : 'text-[#1A1A1A]/70 hover:text-[#6e150f]'}>
+                  <span className="relative z-10">
                     {cat === 'all' ? 'Semua Modul' : cat}
                   </span>
                 </button>
@@ -684,19 +710,18 @@ export default function LandingPage() {
           </div>
 
           {/* Add-ons list grid - animated dynamically */}
-          <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence mode="popLayout">
               {filteredAddOns.length > 0 ? (
                 filteredAddOns.map((addon) => (
                   <motion.div 
                     layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     key={addon.id}
-                    className="flex flex-col p-6 rounded-2xl bg-[#F5EFE6]/30 border border-[#6e150f]/5 hover:border-[#6e150f]/20 hover:bg-white hover:shadow-lg transition-all"
+                    className="flex flex-col p-6 rounded-2xl bg-[#F5EFE6]/30 border border-[#6e150f]/5 hover:border-[#6e150f]/20 hover:bg-white hover:-translate-y-1 hover:shadow-md transition-all duration-300"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] font-extrabold text-[#d0a139] uppercase tracking-wider bg-[#d0a139]/10 px-2 py-0.5 rounded-full">
@@ -724,7 +749,7 @@ export default function LandingPage() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
+          </div>
         </div>
       </section>
 
@@ -759,7 +784,7 @@ export default function LandingPage() {
                 >
                   <button
                     onClick={() => toggleFaq(index)}
-                    className="w-full px-6 py-4 flex items-center justify-between text-left font-bold text-[#1A1A1A] hover:text-[#6e150f] transition-colors gap-4"
+                    className="w-full px-6 py-4 flex items-center justify-between text-left font-bold text-[#1A1A1A] hover:text-[#b92a1c] hover:bg-[#6e150f]/5 transition-all gap-4"
                   >
                     <span className="text-sm sm:text-base">{faq.q}</span>
                     {isOpen ? (
@@ -867,13 +892,13 @@ export default function LandingPage() {
           <div>
             <h4 className="text-white text-sm font-bold mb-4">Hubungi Kami</h4>
             <p className="text-xs leading-relaxed">
-              Email: <span className="text-white">info@inspiralabs.id</span> <br />
+              Email: <span className="text-white">hello@inspiralabs.id</span> <br />
               Website: <a href="https://inspiralabs.id" target="_blank" rel="noreferrer" className="text-[#d0a139] hover:underline">inspiralabs.id</a>
             </p>
           </div>
         </div>
         <div className="max-w-6xl mx-auto px-4 md:px-8 border-t border-white/5 pt-8 text-center text-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} Inspira POS by Inspira Labs. Hak Cipta Dilindungi Undang-Undang.</p>
+          <p>© {new Date().getFullYear()} Inspira POS by InspiraLabs. Hak Cipta Dilindungi Undang-Undang.</p>
           <div className="flex gap-4">
             <a href="https://inspiralabs.id" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Syarat Ketentuan</a>
             <a href="https://inspiralabs.id" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Kebijakan Privasi</a>

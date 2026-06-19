@@ -85,6 +85,9 @@ export const getESCPOSData = ({
   const lines: string[] = [];
   
   lines.push('\x1B\x61\x01'); // Center align
+  if (storeSettings?.licenseStatus !== 'ACTIVE') {
+    lines.push('[ TRIAL MODE - INSPIRA POS ]\n');
+  }
   lines.push(`${storeSettings?.storeName || 'Toko'}\n`);
   if (storeSettings?.address) lines.push(`${storeSettings.address}\n`);
   if (storeSettings?.phone) lines.push(`${storeSettings.phone}\n`);

@@ -150,6 +150,11 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
           {/* ── Header Maroon ── */}
           <div style={{ background: 'linear-gradient(135deg, #6e150f 0%, #b92a1c 100%)', padding: '16px', textAlign: 'center', color: 'white' }}>
+            {storeSettings?.licenseStatus !== 'ACTIVE' && (
+              <div style={{ background: '#FFDD00', color: '#1A1A1A', fontSize: '9px', fontWeight: 'bold', padding: '4px 6px', borderRadius: '6px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                [ TRIAL MODE - INSPIRA POS ]
+              </div>
+            )}
             {storeSettings?.logo ? (
               <img src={storeSettings.logo} alt={storeName} style={{ width: '52px', height: '52px', objectFit: 'contain', borderRadius: '8px', margin: '0 auto 8px', background: 'white', padding: '4px' }} />
             ) : (

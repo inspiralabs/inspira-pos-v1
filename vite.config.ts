@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => ({
         name: "Inspira POS",
         short_name: "Inspira POS",
         description: "Aplikasi kasir modern untuk UMKM Indonesia. Offline-first, tanpa biaya, langsung pakai.",
-        start_url: "/",
+        start_url: "/dashboard",
         display: "standalone",
         background_color: "#F5EFE6",
         theme_color: "#6e150f",

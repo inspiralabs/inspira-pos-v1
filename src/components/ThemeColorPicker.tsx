@@ -4,6 +4,7 @@ import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const THEME_COLOR_KEYS: Record<string, string> = {
+  '4': 'maroon',
   '215': 'blue',
   '25': 'orange',
   '142': 'green',

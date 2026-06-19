@@ -27,6 +27,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import { useTranslation } from 'react-i18next';
+import NumberInput from '@/components/NumberInput';
 
 type RangePreset = 'today' | '7' | '30' | 'month' | 'all';
 
@@ -453,12 +454,9 @@ export default function ExpensesPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>{t('expenses.dialog.amountLabel')}</Label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
+                <NumberInput
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={setAmount}
                   placeholder={t('expenses.dialog.amountPlaceholder')}
                   className="h-11"
                 />

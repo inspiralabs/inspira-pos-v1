@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Search, ScanBarcode, Check, X, Package as PackageIcon } from 'lucide-react';
+import { Search, Check, X, Package as PackageIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import type { Product } from '@/lib/db';
-import BarcodeScanner from '@/components/BarcodeScanner';
 import { useTranslation } from 'react-i18next';
 
 const NUMBER_LOCALES: Record<string, string> = {
@@ -33,7 +32,6 @@ export default function ProductPicker({
   const { t, i18n } = useTranslation('settings');
   const numberLocale = NUMBER_LOCALES[i18n.language] || 'id-ID';
   const [query, setQuery] = useState('');
-  const [scannerOpen, setScannerOpen] = useState(false);
 
   const available = filter ? products.filter(filter) : products;
   const selected = products.find(p => p.id === Number(value));
@@ -45,16 +43,7 @@ export default function ProductPicker({
     p.barcode?.toLowerCase().includes(q)
   );
 
-  const handleScan = (code: string) => {
-    setScannerOpen(false);
-    const product = available.find(p => p.sku === code || p.barcode === code);
-    if (product) {
-      onChange(product.id!.toString());
-      setQuery('');
-    } else {
-      toast.error(t('productPicker.skuBarcodeNotFound', { code }));
-    }
-  };
+
 
   if (selected) {
     return (
@@ -62,8 +51,7 @@ export default function ProductPicker({
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate">{selected.name}</p>
           <p className="text-xs text-muted-foreground">
-            {selected.sku}
-            {selected.barcode ? ` · ${selected.barcode}` : ''} · {t('productPicker.stockLabel')} {selected.stock} {selected.unit}
+            {t('productPicker.stockLabel')} {selected.stock} {selected.unit}
           </p>
           {showHpp && (
             <p className="text-xs text-muted-foreground">
@@ -97,9 +85,6 @@ export default function ProductPicker({
             className="h-11 pl-9"
           />
         </div>
-        <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0" onClick={() => setScannerOpen(true)}>
-          <ScanBarcode className="w-5 h-5" />
-        </Button>
       </div>
 
       {q && (
@@ -119,9 +104,6 @@ export default function ProductPicker({
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{p.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {p.sku}{p.barcode ? ` · ${p.barcode}` : ''}
-                </p>
               </div>
               <span className="text-xs text-muted-foreground shrink-0">{t('productPicker.stockLabel')} {p.stock}</span>
             </button>
@@ -130,7 +112,7 @@ export default function ProductPicker({
       </div>
       )}
 
-      <BarcodeScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onScan={handleScan} />
+
     </div>
   );
 }

@@ -88,6 +88,7 @@
     "description": "Start building your amazing project here!"
   },
   "themeColors": {
+    "maroon": "Maroon",
     "blue": "Blue",
     "orange": "Orange",
     "green": "Green",

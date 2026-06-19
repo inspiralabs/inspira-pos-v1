@@ -16,8 +16,8 @@ import { cn } from '@/lib/utils';
 import { compressImage } from '@/lib/image-utils';
 import { trackEvent } from '@/lib/analytics';
 import { toast } from 'sonner';
+import NumberInput from '@/components/NumberInput';
 import { useAuth } from '@/hooks/use-auth';
-import BarcodeScanner from '@/components/BarcodeScanner';
 import { useTranslation } from 'react-i18next';
 
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
@@ -265,7 +265,7 @@ function GroupCard({ group, expanded, onToggle, onDelete, rp }: GroupCardProps) 
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[10px]">Harga Tambahan (opsional)</Label>
-                  <Input type="number" value={newOptPrice} onChange={e => setNewOptPrice(e.target.value)} placeholder="0" className="h-9 text-sm" />
+                  <NumberInput value={newOptPrice} onChange={setNewOptPrice} placeholder="0" className="h-9 text-sm" />
                 </div>
               </div>
               <div className="flex gap-2">
@@ -313,8 +313,7 @@ export default function Produk() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [subMenuProduct, setSubMenuProduct] = useState<Product | null>(null);
-  // Field tujuan hasil scan kamera: SKU atau Barcode.
-  const [scanTarget, setScanTarget] = useState<'sku' | 'barcode' | null>(null);
+
 
   // Form state
   const [name, setName] = useState('');
@@ -365,11 +364,23 @@ export default function Produk() {
     setDefaultDiscountType(null); setDefaultDiscountValue('');
   };
 
-  const openAdd = () => {
+  const openAdd = async () => {
     if (!categories || categories.length === 0) {
       toast.error(t('toast.noCategory'));
       return;
     }
+
+    // Gating check for products count (Trial mode: max 20 products)
+    const settings = await db.storeSettings.toCollection().first();
+    const isTrial = settings?.licenseStatus !== 'ACTIVE';
+    if (isTrial) {
+      const activeCount = await db.products.where('isDeleted').equals(0).count();
+      if (activeCount >= 20) {
+        toast.error("Batas Produk Tercapai: Maksimal 20 produk dalam mode Trial. Hubungi Admin untuk upgrade lisensi!");
+        return;
+      }
+    }
+
     setEditProduct(null);
     setCategoryId(categories[0]?.id?.toString() ?? '');
     resetForm();
@@ -402,16 +413,30 @@ export default function Produk() {
   };
 
   const handleSave = async (openSubMenuAfterSave = false) => {
-    if (!name.trim() || !categoryId || !sku.trim()) return;
+    const finalSku = editProduct?.id ? sku.trim() : `PROD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    if (!name.trim() || !categoryId) return;
+
+    // Gating check for products count on creation (Trial mode: max 20 products)
+    if (!editProduct?.id) {
+      const settings = await db.storeSettings.toCollection().first();
+      const isTrial = settings?.licenseStatus !== 'ACTIVE';
+      if (isTrial) {
+        const activeCount = await db.products.where('isDeleted').equals(0).count();
+        if (activeCount >= 20) {
+          toast.error("Batas Produk Tercapai: Maksimal 20 produk dalam mode Trial. Hubungi Admin untuk upgrade lisensi!");
+          return;
+        }
+      }
+    }
 
     // Check SKU uniqueness
     const existing = await db.products
       .where('sku')
-      .equals(sku.trim())
+      .equals(finalSku)
       .filter(p => p.isDeleted === 0)
       .first();
     if (existing && existing.id !== editProduct?.id) {
-      toast.error(t('toast.skuExists', { sku: sku.trim(), name: existing.name }));
+      toast.error(t('toast.skuExists', { sku: finalSku, name: existing.name }));
       return;
     }
 
@@ -422,7 +447,7 @@ export default function Produk() {
 
     const data = {
       name: name.trim(),
-      sku: sku.trim(),
+      sku: finalSku,
       categoryId: Number(categoryId),
       price: Number(price) || 0,
       hpp: Number(hpp) || 0,
@@ -430,7 +455,7 @@ export default function Produk() {
       trackStock,
       unit: unit.trim() || 'pcs',
       description: description.trim() || undefined,
-      barcode: barcode.trim() || undefined,
+      barcode: editProduct?.id ? barcode.trim() || undefined : undefined,
       photo: photo || undefined,
       defaultDiscountType: discType,
       defaultDiscountValue: discValue || undefined,
@@ -549,7 +574,7 @@ export default function Produk() {
                         {getCategoryName(p.categoryId)}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('card.sku')}: {p.sku || '-'}</p>
+
                     {p.description && (
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-line">
                         {p.description}
@@ -665,22 +690,7 @@ export default function Produk() {
               <Label>{t('dialog.nameLabel')} *</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('dialog.namePlaceholder')} className="h-11" />
             </div>
-            <div className="space-y-1.5">
-              <Label>{t('dialog.skuLabel')} *</Label>
-              <div className="flex gap-2">
-                <Input value={sku} onChange={e => setSku(e.target.value)} placeholder={t('dialog.skuPlaceholder')} className="h-11 flex-1" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-11 w-11 shrink-0"
-                  title={t('dialog.scanCamera')}
-                  onClick={() => setScanTarget('sku')}
-                >
-                  <ScanLine className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+
             <div className="space-y-1.5">
               <Label>{t('dialog.categoryLabel')} *</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
@@ -697,11 +707,11 @@ export default function Produk() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>{t('dialog.priceLabel')} *</Label>
-                <Input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('dialog.pricePlaceholder')} className="h-11" />
+                <NumberInput value={price} onChange={setPrice} placeholder={t('dialog.pricePlaceholder')} className="h-11" />
               </div>
               <div className="space-y-1.5">
                 <Label>{t('dialog.hppLabel')}</Label>
-                <Input type="number" value={hpp} onChange={e => setHpp(e.target.value)} placeholder={t('dialog.hppPlaceholder')} className="h-11" />
+                <NumberInput value={hpp} onChange={setHpp} placeholder={t('dialog.hppPlaceholder')} className="h-11" />
               </div>
             </div>
 
@@ -790,32 +800,7 @@ export default function Produk() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>{t('dialog.barcodeLabel')}</Label>
-              <div className="flex gap-2">
-                <Input value={barcode} onChange={e => setBarcode(e.target.value)} placeholder={t('dialog.barcodePlaceholder')} className="h-11 flex-1" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-11 w-11 shrink-0"
-                  title={t('dialog.copyFromSku')}
-                  onClick={() => setBarcode(sku.trim())}
-                >
-                  <Copy className="w-4 h-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-11 w-11 shrink-0"
-                  title={t('dialog.scanCamera')}
-                  onClick={() => setScanTarget('barcode')}
-                >
-                  <ScanLine className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+
             <div className="space-y-1.5">
               <Label>{t('dialog.descriptionLabel')}</Label>
               <Textarea
@@ -833,21 +818,21 @@ export default function Produk() {
                   variant="outline"
                   className="flex-1 h-12 text-sm font-semibold border-primary/30 text-primary hover:bg-primary/5"
                   onClick={() => handleSave(false)}
-                  disabled={!name.trim() || !categoryId || !sku.trim()}
+                  disabled={!name.trim() || !categoryId}
                 >
                   {t('saveButton.add')}
                 </Button>
                 <Button
                   className="flex-1 h-12 text-sm font-semibold"
                   onClick={() => handleSave(true)}
-                  disabled={!name.trim() || !categoryId || !sku.trim()}
+                  disabled={!name.trim() || !categoryId}
                 >
                   Simpan & Atur Sub-Menu
                 </Button>
               </div>
             ) : (
               <div className="space-y-2">
-                <Button className="w-full h-12 text-base font-semibold" onClick={() => handleSave(false)} disabled={!name.trim() || !categoryId || !sku.trim()}>
+                <Button className="w-full h-12 text-base font-semibold" onClick={() => handleSave(false)} disabled={!name.trim() || !categoryId}>
                   {t('saveButton.edit')}
                 </Button>
                 <Button
@@ -855,7 +840,7 @@ export default function Produk() {
                   variant="outline"
                   className="w-full h-11 gap-2 border-primary/30 text-primary hover:bg-primary/5"
                   onClick={() => handleSave(true)}
-                  disabled={!name.trim() || !categoryId || !sku.trim()}
+                  disabled={!name.trim() || !categoryId}
                 >
                   <ListPlus className="w-4 h-4" />
                   Simpan & Kelola Sub-Menu
@@ -880,17 +865,7 @@ export default function Produk() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Scanner kamera untuk SKU / Barcode */}
-      <BarcodeScanner
-        open={scanTarget !== null}
-        onClose={() => setScanTarget(null)}
-        onScan={(value) => {
-          const v = value.trim();
-          if (scanTarget === 'sku') setSku(v);
-          else if (scanTarget === 'barcode') setBarcode(v);
-          setScanTarget(null);
-        }}
-      />
+
 
       {/* Sub-Menu Manager */}
       {subMenuProduct && (

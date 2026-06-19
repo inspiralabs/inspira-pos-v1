@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
-import { checkVersion } from "@/lib/version-check";
 import { initAnalytics } from "@/lib/analytics";
 import { Capacitor } from "@capacitor/core";
 import { StatusBar } from "@capacitor/status-bar";
@@ -42,13 +41,13 @@ import CloudHistorySettings from "./pages/settings/CloudHistorySettings";
 import CloudStoreSettings from "./pages/settings/CloudStoreSettings";
 import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 
 const App = () => {
   useEffect(() => {
-    checkVersion();
     initAnalytics();
 
     if (Capacitor.isNativePlatform()) {
@@ -266,6 +265,14 @@ const App = () => {
                     }
                   />
                 </Route>
+                <Route
+                  path="/admin-dashboard"
+                  element={
+                    <ErrorBoundary>
+                      <AdminDashboard />
+                    </ErrorBoundary>
+                  }
+                />
                 <Route
                   path="/"
                   element={

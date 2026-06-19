@@ -288,6 +288,11 @@ export interface StoreSettings {
   lastCloudBackupAt?: Date | null; // last successful upload to cloud
   allowDebt?: boolean; // opt-in pembayaran sebagian/seluruhnya sebagai hutang
   cloudStoreId?: string | null; // cloud store ID yang di-bind ke device ini untuk sync
+  
+  // SPRINT 2: License / trial settings
+  licenseStatus?: 'TRIAL' | 'ACTIVE' | 'EXPIRED';
+  trialStartedAt?: Date | null;
+  licenseKey?: string | null;
 }
 
 // === Database ===
@@ -714,6 +719,37 @@ class PosDatabase extends Dexie {
       productOptionGroups:     '++id, productId, isDeleted',
       productOptions:          '++id, groupId, isDeleted',
     });
+
+    // Version 14 — license trial fields
+    this.version(14).stores({
+      categories:              '++id, name, isDeleted',
+      products:                '++id, name, &sku, categoryId, barcode, isDeleted, createdBy, updatedBy, unit',
+      suppliers:               '++id, name, isDeleted',
+      customers:               '++id, name, isDeleted',
+      stockIns:                '++id, productId, supplierId, date, createdBy',
+      stockOuts:               '++id, productId, date, createdBy',
+      hppHistory:              '++id, productId, date',
+      paymentMethods:          '++id, name, category',
+      transactions:            '++id, date, &receiptNumber, paymentMethodId, status, orderNumber, createdBy',
+      transactionItems:        '++id, transactionId, productId',
+      transactionItemOptions:  '++id, transactionItemId, optionGroupId, optionId',
+      storeSettings:           '++id',
+      units:                   '++id, &name, isDeleted',
+      users:                   '++id, &username, role, isActive',
+      expenseCategories:       '++id, name, isDeleted',
+      expenses:                '++id, date, categoryId, paymentMethodId, createdBy, isDeleted',
+      debts:                   '++id, &transactionId, customerId, status, createdAt',
+      debtPayments:            '++id, debtId, date, paymentMethodId, createdBy',
+      productOptionGroups:     '++id, productId, isDeleted',
+      productOptions:          '++id, groupId, isDeleted',
+    }).upgrade(async (tx) => {
+      const storeTable = tx.table('storeSettings');
+      await storeTable.toCollection().modify((s: Partial<StoreSettings>) => {
+        if (s.licenseStatus === undefined) s.licenseStatus = 'TRIAL';
+        if (s.trialStartedAt === undefined) s.trialStartedAt = null;
+        if (s.licenseKey === undefined) s.licenseKey = null;
+      });
+    });
   }
 }
 
@@ -771,12 +807,22 @@ export async function seedDefaultData() {
       onboardingDone: false,
       lastBackupAt: null,
       deviceId: crypto.randomUUID(),
+      licenseStatus: 'TRIAL',
+      trialStartedAt: null,
+      licenseKey: null,
     });
   } else {
     // Fallback: if storeSettings exists but has no deviceId, generate one
     const settings = await db.storeSettings.toCollection().first();
-    if (settings && !settings.deviceId) {
-      await db.storeSettings.update(settings.id!, { deviceId: crypto.randomUUID() });
+    if (settings) {
+      const updates: any = {};
+      if (!settings.deviceId) updates.deviceId = crypto.randomUUID();
+      if (settings.licenseStatus === undefined) updates.licenseStatus = 'TRIAL';
+      if (settings.trialStartedAt === undefined) updates.trialStartedAt = null;
+      if (settings.licenseKey === undefined) updates.licenseKey = null;
+      if (Object.keys(updates).length > 0) {
+        await db.storeSettings.update(settings.id!, updates);
+      }
     }
   }
 

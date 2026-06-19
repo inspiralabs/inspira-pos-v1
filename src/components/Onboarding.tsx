@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { db, type Product } from '@/lib/db';
-import { markAllFeaturesSeen } from '@/lib/whats-new';
+import { markAllFeaturesSeen, ALL_FEATURE_IDS } from '@/lib/whats-new';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ThemeColorPicker from '@/components/ThemeColorPicker';
@@ -73,7 +73,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [loadDummy, setLoadDummy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [themeColor, setThemeColorState] = useState('215');
+  const [themeColor, setThemeColorState] = useState('4');
   const { isLoggedIn: cloudLoggedIn, login: cloudLogin, googleUser: cloudUser, logout: cloudLogout } = useCloudAuth();
   const [showCloud, setShowCloud] = useState(false);
   const [cloudBackups, setCloudBackups] = useState<CloudBackup[]>([]);
@@ -351,6 +351,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     setSaving(true);
     try {
       const existing = await db.storeSettings.toCollection().first();
+      const trialStartedAt = existing?.trialStartedAt || new Date();
+      const deviceId = existing?.deviceId || crypto.randomUUID();
+
       if (existing?.id) {
         await db.storeSettings.update(existing.id, {
           storeName: storeName.trim(),
@@ -358,6 +361,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           phone: phone.trim(),
           onboardingDone: true,
           themeColor,
+          licenseStatus: 'TRIAL',
+          trialStartedAt,
+          licenseKey: null,
+          deviceId,
         });
       } else {
         await db.storeSettings.add({
@@ -368,6 +375,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           onboardingDone: true,
           lastBackupAt: null,
           themeColor,
+          licenseStatus: 'TRIAL',
+          trialStartedAt,
+          licenseKey: null,
+          deviceId,
         });
       }
 
@@ -375,10 +386,29 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         await seedDummyData();
       }
 
-      // Fresh installs shouldn't see the "What's New" modal for shipped
-      // features that exist at install time — those aren't new to them.
-      // Mark every current feature id as seen so they only get future ones.
-      await markAllFeaturesSeen();
+      // Sync onboarding to backend (Supabase) if online
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/clients/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storeName: storeName.trim(),
+            address: address.trim(),
+            phone: phone.trim(),
+            deviceId,
+          }),
+        });
+        if (res.ok) {
+          toast.success('Pendaftaran toko ke database pusat berhasil!');
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('Pendaftaran pusat gagal:', errData.error || 'Server error');
+        }
+      } catch (err) {
+        console.warn('Gagal terhubung ke database pusat (offline mode):', err);
+        toast.info('Setup selesai secara offline. Riwayat lisensi akan disinkronkan saat terhubung internet.');
+      }
 
       onComplete();
     } finally {
@@ -528,6 +558,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               </div>
               <h2 className="text-2xl font-bold tracking-tight">{t('store.title')}</h2>
               <p className="text-sm text-muted-foreground">{t('store.subtitle')}</p>
+              <div className="inline-flex items-center gap-1.5 mx-auto text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-900/50 mt-1 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Mode Uji Coba (Trial 14 Hari) Aktif Otomatis
+              </div>
             </div>
 
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">

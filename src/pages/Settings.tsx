@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Settings, Store, CreditCard, Tag, Download, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive, Package, Camera, X, Ruler, Users as UsersIcon, ShieldCheck, LogOut, Smartphone, CheckCircle2, Globe, Share2, Wallet, Sparkles, LineChart, Cloud, HandCoins } from 'lucide-react';
+import { Settings, Store, CreditCard, Tag, Download, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive, Package, Camera, X, Ruler, Users as UsersIcon, ShieldCheck, LogOut, Smartphone, CheckCircle2, Globe, Share2, Wallet, Sparkles, LineChart, Cloud, HandCoins, KeyRound } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
@@ -23,6 +23,7 @@ import { Printer } from 'lucide-react';
 import { APP_VERSION } from '@/lib/app-version';
 import { useTranslation, Trans } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { getLicenseStatus, getTrialDaysLeft, validateLicenseKey } from '@/lib/license';
 
 export default function Pengaturan() {
   const { t } = useTranslation('settings');
@@ -60,6 +61,45 @@ export default function Pengaturan() {
 
   // Analytics opt-out (default: tracking on)
   const [analyticsOn, setAnalyticsOn] = useState(isAnalyticsEnabled());
+
+  // License Activation
+  const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
+  const [inputKey, setInputKey] = useState('');
+  const [activatingLicense, setActivatingLicense] = useState(false);
+
+  const handleActivateLicense = async () => {
+    if (!inputKey.trim() || !storeSettings) return;
+    setActivatingLicense(true);
+    try {
+      const isValid = await validateLicenseKey(storeSettings.storeName, storeSettings.deviceId, inputKey.trim());
+      if (isValid) {
+        await db.storeSettings.update(storeSettings.id!, {
+          licenseStatus: 'ACTIVE',
+          licenseKey: inputKey.trim(),
+        });
+        toast.success('Aplikasi Kasir berhasil diaktifkan secara permanen!');
+        setLicenseDialogOpen(false);
+        setInputKey('');
+      } else {
+        toast.error('Kode Aktivasi tidak valid. Periksa kembali nama toko atau kode Anda.');
+      }
+    } catch {
+      toast.error('Gagal memverifikasi kode lisensi.');
+    } finally {
+      setActivatingLicense(false);
+    }
+  };
+
+  const handleWhatsAppContact = () => {
+    if (!storeSettings) return;
+    const waNumber = '628123456789'; // Placeholder WA number or user contact
+    const message = encodeURIComponent(
+      `Halo Admin Inspira POS, saya ingin mengaktifkan lisensi untuk toko:\n` +
+      `- Nama Toko: ${storeSettings.storeName}\n` +
+      `- Device ID: ${storeSettings.deviceId}`
+    );
+    window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
+  };
 
   // Native Bluetooth printer settings
   const [defaultPrinter, setDefaultPrinter] = useState<BluetoothPrinter | null>(() => getDefaultBluetoothPrinter());
@@ -307,6 +347,34 @@ export default function Pengaturan() {
         </CardContent>
       </Card>
 
+      {/* License Info Card */}
+      {storeSettings && (
+        <Card className={`border-0 shadow-sm overflow-hidden border-l-4 ${storeSettings.licenseStatus === 'ACTIVE' ? 'border-success' : 'border-warning'}`}>
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${storeSettings.licenseStatus === 'ACTIVE' ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">
+                  Status Lisensi: {storeSettings.licenseStatus === 'ACTIVE' ? 'Aktif Permanen' : 'Masa Trial 14 Hari'}
+                </p>
+                {storeSettings.licenseStatus !== 'ACTIVE' ? (
+                  <p className="text-xs text-muted-foreground">
+                    Sisa waktu trial: {getTrialDaysLeft(storeSettings)} Hari lagi
+                  </p>
+                ) : (
+                  <p className="text-xs text-success font-medium">Aplikasi terbuka penuh secara offline</p>
+                )}
+              </div>
+            </div>
+            <Button size="sm" variant="outline" className={`h-8 text-xs shrink-0 ${storeSettings.licenseStatus === 'ACTIVE' ? 'border-success text-success hover:bg-success/5' : 'border-warning text-warning hover:bg-warning/5'}`} onClick={() => setLicenseDialogOpen(true)}>
+              {storeSettings.licenseStatus === 'ACTIVE' ? 'Lihat Detail' : 'Aktivasi Lisensi'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Cloud Sync is disabled/hidden in this version */}
 
       {/* Install as App — hidden when already installed */}
@@ -388,8 +456,8 @@ export default function Pengaturan() {
             </Card>
           ) : (
             <>
-              <Link to="/users">
-                <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+              <Link to="/users" className="block">
+                <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
                     <div className="flex-1">
@@ -422,8 +490,8 @@ export default function Pengaturan() {
       {/* Transaksi & Stok */}
       <div className="space-y-2">
         <h2 className="text-sm font-semibold text-muted-foreground">{t('transactionsAndStock.sectionTitle')}</h2>
-        <Link to="/history">
-          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+        <Link to="/history" className="block">
+          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Receipt className="w-4 h-4" /></div>
               <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.transactionHistory.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.transactionHistory.description')}</p></div>
@@ -432,8 +500,8 @@ export default function Pengaturan() {
           </Card>
         </Link>
         {can('manage_supplier') && (
-          <Link to="/supplier">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/supplier" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Truck className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.supplier.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.supplier.description')}</p></div>
@@ -443,8 +511,8 @@ export default function Pengaturan() {
           </Link>
         )}
         {can('manage_customers') && (
-          <Link to="/customers">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/customers" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.customers.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.customers.description')}</p></div>
@@ -454,8 +522,8 @@ export default function Pengaturan() {
           </Link>
         )}
         {can('manage_customers') && storeSettings?.allowDebt && (
-          <Link to="/debts">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/debts" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
                 <div className="flex-1">
@@ -469,8 +537,8 @@ export default function Pengaturan() {
         )}
         {can('manage_stock_inout') && (
           <>
-            <Link to="/stock-in">
-              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+            <Link to="/stock-in" className="block">
+              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center"><ArrowDownToLine className="w-4 h-4" /></div>
                   <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.stockIn.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.stockIn.description')}</p></div>
@@ -478,8 +546,8 @@ export default function Pengaturan() {
                 </CardContent>
               </Card>
             </Link>
-            <Link to="/stock-out">
-              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+            <Link to="/stock-out" className="block">
+              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center"><ArrowUpFromLine className="w-4 h-4" /></div>
                   <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.stockOut.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.stockOut.description')}</p></div>
@@ -490,8 +558,8 @@ export default function Pengaturan() {
           </>
         )}
         {(can('manage_expenses') || can('view_expenses')) && (
-          <Link to="/expenses">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/expenses" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.expenses.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.expenses.description')}</p></div>
@@ -501,7 +569,7 @@ export default function Pengaturan() {
           </Link>
         )}
         {can('view_reports') && (
-          <Link to="/stock-report">
+          <Link to="/stock-report" className="block">
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Package className="w-4 h-4" /></div>
@@ -518,7 +586,7 @@ export default function Pengaturan() {
         <h2 className="text-sm font-semibold text-muted-foreground">{t('masterData.sectionTitle')}</h2>
 
         {can('manage_store_settings') && (
-          <Card className="border-0 shadow-sm mb-2">
+          <Card className="border-0 shadow-sm">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
               <div className="flex-1">
@@ -531,8 +599,8 @@ export default function Pengaturan() {
         )}
 
         {can('manage_categories_payments') && (
-          <Link to="/settings/payment-methods">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/settings/payment-methods" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><CreditCard className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.paymentMethods.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.paymentMethods.description', { count: paymentMethods?.length ?? 0 })}</p></div>
@@ -543,8 +611,8 @@ export default function Pengaturan() {
         )}
 
         {can('manage_categories_payments') && (
-          <Link to="/settings/product-category">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/settings/product-category" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Tag className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.productCategory.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.productCategory.description', { count: categories?.length ?? 0 })}</p></div>
@@ -555,8 +623,8 @@ export default function Pengaturan() {
         )}
 
         {can('manage_categories_payments') && (
-          <Link to="/settings/expense-category">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/settings/expense-category" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.expenseCategory.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.expenseCategory.description', { count: expenseCategories?.length ?? 0 })}</p></div>
@@ -566,8 +634,8 @@ export default function Pengaturan() {
           </Link>
         )}
 
-        <Link to="/settings/units">
-          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+        <Link to="/settings/units" className="block">
+          <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Ruler className="w-4 h-4" /></div>
               <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.units.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.units.description', { count: units?.length ?? 0 })}</p></div>
@@ -577,8 +645,8 @@ export default function Pengaturan() {
         </Link>
 
         {can('manage_store_settings') && (
-          <Link to="/settings/theme">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+          <Link to="/settings/theme" className="block">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Palette className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.theme.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.theme.description')}</p></div>
@@ -589,7 +657,7 @@ export default function Pengaturan() {
         )}
 
         {can('manage_backup') && (
-          <Link to="/settings/backup">
+          <Link to="/settings/backup" className="block">
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center"><Download className="w-4 h-4" /></div>
@@ -839,6 +907,81 @@ export default function Pengaturan() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* License Dialog */}
+      {storeSettings && (
+        <Dialog open={licenseDialogOpen} onOpenChange={setLicenseDialogOpen}>
+          <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Informasi Lisensi Aplikasi</DialogTitle>
+              <DialogDescription className="text-xs">
+                Aktivasi offline instan tanpa internet menggunakan kode khusus dari Admin.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 mt-2">
+              <div className="space-y-1.5 p-3 rounded-lg bg-muted/50 border border-border text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Nama Toko:</span>
+                  <span className="font-bold">{storeSettings.storeName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Device ID:</span>
+                  <span className="font-mono text-[10px] break-all select-all">{storeSettings.deviceId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Status Lisensi:</span>
+                  <span className={`font-bold ${storeSettings.licenseStatus === 'ACTIVE' ? 'text-success' : 'text-warning'}`}>
+                    {storeSettings.licenseStatus === 'ACTIVE' ? 'Aktif Permanen' : 'Masa Trial'}
+                  </span>
+                </div>
+                {storeSettings.licenseStatus === 'ACTIVE' && storeSettings.licenseKey && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Kode Aktif:</span>
+                    <span className="font-mono text-[10px] break-all">{storeSettings.licenseKey}</span>
+                  </div>
+                )}
+              </div>
+
+              {storeSettings.licenseStatus !== 'ACTIVE' ? (
+                <>
+                  <Button onClick={handleWhatsAppContact} className="w-full h-11 bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold gap-2">
+                    Hubungi Admin via WhatsApp
+                  </Button>
+
+                  <div className="relative flex items-center justify-center my-4">
+                    <span className="absolute inset-x-0 border-t border-border" />
+                    <span className="relative px-3 bg-card text-xs text-muted-foreground uppercase">Atau masukkan kode lisensi</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="settings-license-code" className="text-xs font-semibold flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-primary" />
+                      Kode Aktivasi Lisensi
+                    </Label>
+                    <Input
+                      id="settings-license-code"
+                      placeholder="XXXX-XXXX-XXXX-XXXX"
+                      value={inputKey}
+                      onChange={e => setInputKey(e.target.value)}
+                      className="h-11 text-center font-mono text-sm tracking-wider uppercase"
+                      disabled={activatingLicense}
+                    />
+                  </div>
+
+                  <Button onClick={handleActivateLicense} className="w-full h-11 font-bold" disabled={!inputKey.trim() || activatingLicense}>
+                    {activatingLicense ? 'Memproses...' : 'Aktifkan Aplikasi'}
+                  </Button>
+                </>
+              ) : (
+                <div className="p-3 bg-success/15 border border-success/35 text-success rounded-xl text-center">
+                  <p className="text-sm font-bold">Lisensi Aktif Selamanya</p>
+                  <p className="text-[11px] text-success/80 mt-1">Aplikasi telah diaktivasi dan semua batasan sandbox trial (maksimal produk/transaksi, watermark struk, dan ekspor laporan) dilepas secara permanen.</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Multi-User Activation Dialog */}
       <Dialog open={activateOpen} onOpenChange={setActivateOpen}>

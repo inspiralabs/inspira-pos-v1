@@ -13,6 +13,7 @@ import { getUnseenFeatures } from '@/lib/whats-new';
 import { useAuth } from '@/hooks/use-auth';
 import type { PermissionKey } from '@/lib/db';
 import { useTranslation } from 'react-i18next';
+import { getLicenseStatus, getTrialDaysLeft } from '@/lib/license';
 
 const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -107,10 +108,17 @@ export default function Dashboard() {
 
   return (
     <div className="px-4 pt-6 space-y-5">
-      {/* Header */}
       <div>
         <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE, d MMMM yyyy', { locale: dateLocale })}</p>
-        <h1 className="text-2xl font-bold tracking-tight">{storeSettings?.storeName || t('title.storeNameFallback')}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">{storeSettings?.storeName || t('title.storeNameFallback')}</h1>
+          {storeSettings && getLicenseStatus(storeSettings) === 'TRIAL' && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-900/50 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Trial Mode ({getTrialDaysLeft(storeSettings)} Hari Tersisa)
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Backup Reminder */}

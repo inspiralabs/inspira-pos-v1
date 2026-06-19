@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { useTranslation } from 'react-i18next';
+import NumberInput from '@/components/NumberInput';
 
 const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
@@ -310,11 +311,9 @@ export default function DebtsPage() {
             </div>
             <div className="space-y-1.5">
               <Label>{t('debts.paymentDialog.amountLabel')}</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
+              <NumberInput
                 value={paymentAmount}
-                onChange={(event) => setPaymentAmount(event.target.value)}
+                onChange={setPaymentAmount}
                 className="h-11 text-lg font-bold"
               />
             </div>

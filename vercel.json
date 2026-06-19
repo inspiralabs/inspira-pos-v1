@@ -1,4 +1,94 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "admindash.inspirapos.biz.id"
+        }
+      ],
+      "destination": "/admin-dashboard",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "demo.inspirapos.biz.id"
+        }
+      ],
+      "destination": "/dashboard",
+      "permanent": false
+    },
+    {
+      "source": "/admin-dashboard(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "inspirapos.biz.id"
+        }
+      ],
+      "destination": "https://admindash.inspirapos.biz.id/admin-dashboard$1",
+      "permanent": false
+    },
+    {
+      "source": "/admin-dashboard(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "inspirapos.inspiralabs.id"
+        }
+      ],
+      "destination": "https://admindash.inspirapos.biz.id/admin-dashboard$1",
+      "permanent": false
+    },
+    {
+      "source": "/admin-dashboard(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "demo.inspirapos.biz.id"
+        }
+      ],
+      "destination": "https://admindash.inspirapos.biz.id/admin-dashboard$1",
+      "permanent": false
+    },
+    {
+      "source": "/(dashboard|cashier|products|reports|settings|supplier|customers|stock-in|stock-out|history|stock-report|users|expenses|debts)(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "inspirapos.biz.id"
+        }
+      ],
+      "destination": "https://demo.inspirapos.biz.id/$1$2",
+      "permanent": false
+    },
+    {
+      "source": "/(dashboard|cashier|products|reports|settings|supplier|customers|stock-in|stock-out|history|stock-report|users|expenses|debts)(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "inspirapos.inspiralabs.id"
+        }
+      ],
+      "destination": "https://demo.inspirapos.biz.id/$1$2",
+      "permanent": false
+    },
+    {
+      "source": "/(dashboard|cashier|products|reports|settings|supplier|customers|stock-in|stock-out|history|stock-report|users|expenses|debts)(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "admindash.inspirapos.biz.id"
+        }
+      ],
+      "destination": "https://demo.inspirapos.biz.id/$1$2",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

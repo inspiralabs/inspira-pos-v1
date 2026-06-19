@@ -1,9 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, isStockManaged, type Product, type Category, type Transaction, type TransactionItemRecord, type ProductOptionGroup, type ProductOption } from '@/lib/db';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check, ScanBarcode, Package as PackageIcon, ClipboardList, Save, Pencil, User, Hash, Trash2, Barcode, ListPlus } from 'lucide-react';
+import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check, Package as PackageIcon, ClipboardList, Save, Pencil, User, Hash, Trash2, ListPlus } from 'lucide-react';
 import Receipt from '@/components/Receipt';
-import BarcodeScanner from '@/components/BarcodeScanner';
+import NumberInput from '@/components/NumberInput';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,14 +99,13 @@ export default function Kasir() {
   const [customerId, setCustomerId] = useState<number | undefined>(undefined);
   const [tableNumber, setTableNumber] = useState('');
   const [remarks, setRemarks] = useState('');
-  const [scannerOpen, setScannerOpen] = useState(false);
+
   const [openBillsOpen, setOpenBillsOpen] = useState(false);
   const [editingItemNotes, setEditingItemNotes] = useState<number | null>(null);
   const [tempItemNotes, setTempItemNotes] = useState('');
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelTargetTx, setCancelTargetTx] = useState<Transaction | null>(null);
-  const [scanInput, setScanInput] = useState('');
-  const scanInputRef = useRef<HTMLInputElement>(null);
+
   // Sub-menu dialog state
   const [subMenuProduct, setSubMenuProduct] = useState<Product | null>(null);
   const [subMenuGroups, setSubMenuGroups] = useState<(ProductOptionGroup & { options: ProductOption[] })[]>([]);
@@ -360,8 +359,38 @@ export default function Kasir() {
 
   // === Open Bill Operations ===
 
+  const checkTrialTransactionLimit = async (): Promise<boolean> => {
+    const settings = await db.storeSettings.toCollection().first();
+    const isTrial = settings?.licenseStatus !== 'ACTIVE';
+    if (isTrial) {
+      const txCount = await db.transactions.count();
+      if (txCount >= 50) {
+        toast.error("Batas Transaksi Uji Coba Terlampaui: Maksimal 50 transaksi dalam mode Trial. Hubungi Admin untuk upgrade lisensi!");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const openCheckout = async () => {
+    if (!editingTxId) {
+      const allowed = await checkTrialTransactionLimit();
+      if (!allowed) return;
+    }
+    setCheckoutOpen(true);
+    setUseDebt(false);
+    setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? '');
+    setPaymentAmount(total.toString());
+    setIsQuickAdding(false);
+  };
+
   const saveOpenBill = async () => {
     if (cart.length === 0) { toast.error(t('cashier.toast.cartEmpty')); return; }
+
+    if (!editingTxId) {
+      const allowed = await checkTrialTransactionLimit();
+      if (!allowed) return;
+    }
 
     const now = new Date();
 
@@ -539,6 +568,11 @@ export default function Kasir() {
   // === Checkout ===
 
   const handleCheckout = async () => {
+    if (!editingTxId) {
+      const allowed = await checkTrialTransactionLimit();
+      if (!allowed) return;
+    }
+
     if (useDebt) {
       if (!storeSettings?.allowDebt) return;
       if (!customerId) {
@@ -710,45 +744,9 @@ export default function Kasir() {
   const cartCount = cart.reduce((s, c) => s + c.qty, 0);
   const openBillsCount = openBills?.length ?? 0;
 
-  const handleScan = (barcode: string) => {
-    setScannerOpen(false);
-    const product = products?.find(p => p.sku === barcode || p.barcode === barcode);
-    if (product) {
-      if (isStockManaged(product) && product.stock <= 0) {
-        toast.error(t('cashier.toast.productOutOfStock', { name: product.name }));
-        return;
-      }
-      addToCart(product);
-      toast.success(t('cashier.toast.addedToCart', { name: product.name }));
-    } else {
-      toast.error(t('cashier.toast.productNotFound', { code: barcode }));
-    }
-  };
 
-  const handleScanKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && scanInput.trim()) {
-      const code = scanInput.trim();
-      setScanInput('');
-      const product = products?.find(p => p.sku === code || p.barcode === code);
-      if (product) {
-        if (isStockManaged(product) && product.stock <= 0) {
-          toast.error(t('cashier.toast.productOutOfStock', { name: product.name }));
-          return;
-        }
-        addToCart(product);
-        toast.success(t('cashier.toast.addedToCart', { name: product.name }));
-      } else {
-        toast.error(t('cashier.toast.productNotFound', { code }));
-      }
-    }
-  };
 
-  // Auto-focus scan input after it clears
-  useEffect(() => {
-    if (scanInput === '' && scanInputRef.current) {
-      scanInputRef.current.focus();
-    }
-  }, [scanInput]);
+
 
   // Open the Open Bills sheet when navigated here from the dashboard
   useEffect(() => {
@@ -795,24 +793,6 @@ export default function Kasir() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder={t('cashier.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
-        </div>
-        <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setScannerOpen(true)}>
-          <ScanBarcode className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {/* SKU / Barcode scan input */}
-      <div className="flex gap-2 mb-3">
-        <div className="relative flex-1">
-          <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            ref={scanInputRef}
-            placeholder={t('cashier.scanPlaceholder')}
-            value={scanInput}
-            onChange={e => setScanInput(e.target.value)}
-            onKeyDown={handleScanKeyDown}
-            className="pl-9 h-10 text-sm"
-          />
         </div>
       </div>
 
@@ -1075,7 +1055,7 @@ export default function Kasir() {
                 </Button>
                 <Button
                   className="flex-1 h-12 text-sm font-semibold"
-                  onClick={() => { setCheckoutOpen(true); setUseDebt(false); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
+                  onClick={openCheckout}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
                   {t('cashier.buttons.pay')}
@@ -1294,7 +1274,7 @@ export default function Kasir() {
                 </Button>
                 <Button
                   className="flex-1 h-12 text-sm font-semibold"
-                  onClick={() => { setCheckoutOpen(true); setUseDebt(false); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
+                  onClick={openCheckout}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
                   {t('cashier.buttons.pay')}
@@ -1415,11 +1395,9 @@ export default function Kasir() {
 
             <div className="space-y-1.5">
               <p className="text-sm font-medium">{useDebt ? t('cashier.checkout.amountLabel.debt') : t('cashier.checkout.amountLabel.full')}</p>
-              <Input
-                type="number"
-                inputMode="numeric"
-                value={paymentAmount === '0' ? '' : paymentAmount}
-                onChange={e => { setPaymentAmount(e.target.value || '0'); setIsQuickAdding(true); }}
+              <NumberInput
+                value={paymentAmount}
+                onChange={val => { setPaymentAmount(val || '0'); setIsQuickAdding(true); }}
                 placeholder={t('cashier.checkout.amountPlaceholder')}
                 className="h-12 text-lg font-bold text-center"
               />
@@ -1685,12 +1663,7 @@ export default function Kasir() {
         />
       )}
 
-      {/* Barcode Scanner */}
-      <BarcodeScanner
-        open={scannerOpen}
-        onClose={() => setScannerOpen(false)}
-        onScan={handleScan}
-      />
+
 
       {/* Cancel Open Bill Confirmation */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>

@@ -203,7 +203,18 @@ export default function Laporan() {
           <BarChart3 className="w-5 h-5 text-primary" />
           {t('title')}
         </h1>
-        <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setExportOpen(true)}>
+        <Button 
+          size="sm" 
+          variant="outline" 
+          className="h-9 gap-1.5" 
+          onClick={() => {
+            if (storeSettings?.licenseStatus !== 'ACTIVE') {
+              toast.error("Fitur Dinonaktifkan: Ekspor laporan PDF/Excel hanya tersedia untuk lisensi Aktif. Hubungi Admin untuk melakukan aktivasi!");
+              return;
+            }
+            setExportOpen(true);
+          }}
+        >
           <Download className="w-4 h-4" /> {t('export')}
         </Button>
       </div>

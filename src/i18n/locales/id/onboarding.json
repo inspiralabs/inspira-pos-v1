@@ -33,7 +33,7 @@
   },
   "store": {
     "title": "Setup Toko Kamu",
-    "subtitle": "Informasi ini akan tampil di struk belanja",
+    "subtitle": "Isi data toko kamu",
     "storeName": "Nama Toko",
     "storeNamePlaceholder": "Contoh: Toko Berkah Jaya",
     "address": "Alamat",
