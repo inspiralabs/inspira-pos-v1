@@ -542,7 +542,7 @@ export default function LandingPage() {
               </ul>
 
               <Link 
-                to="/dashboard" 
+                to="/#" 
                 className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 border-2 border-[#6e150f]/20 text-[#6e150f] hover:border-[#6e150f] hover:bg-[#6e150f]/5 transition-all text-center"
               >
                 Mulai Trial 30 Hari
@@ -619,7 +619,7 @@ export default function LandingPage() {
               </ul>
 
               <Link 
-                to="/dashboard" 
+                to="#"
                 className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 bg-gradient-to-r from-[#6e150f] to-[#b92a1c] text-[#F5EFE6] hover:shadow-lg hover:shadow-[#6e150f]/20 transition-all text-center"
               >
                 Mulai Trial Pro 30 Hari
