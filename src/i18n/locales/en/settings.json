@@ -839,6 +839,11 @@
       "title": "Backup & Restore",
       "permissionLabel": "Manage Backup"
     },
+    "trialLocked": {
+      "title": "Feature Disabled (Trial Mode)",
+      "description": "Local Backup & Restore features are only available for versions with an active license. Please activate your license first to unlock this feature.",
+      "backButton": "Back to Settings"
+    },
     "title": "Backup & Restore",
     "exportButton": "Export Backup (JSON)",
     "importButton": "Import / Restore Data",

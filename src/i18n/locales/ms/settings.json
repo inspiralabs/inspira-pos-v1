@@ -389,6 +389,11 @@
       "title": "Backup & Restore",
       "permissionLabel": "Urus Backup"
     },
+    "trialLocked": {
+      "title": "Ciri Ditutup (Mod Trial)",
+      "description": "Ciri Backup dan Restore data tempatan hanya tersedia untuk versi berlesen aktif. Sila aktifkan lesen anda terlebih dahulu untuk membuka ciri ini.",
+      "backButton": "Kembali ke Tetapan"
+    },
     "title": "Backup & Restore",
     "exportButton": "Eksport Backup (JSON)",
     "importButton": "Import / Restore Data",

@@ -839,6 +839,11 @@
       "title": "Backup & Restore",
       "permissionLabel": "Kelola Backup"
     },
+    "trialLocked": {
+      "title": "Fitur Dinonaktifkan (Mode Trial)",
+      "description": "Fitur Backup dan Restore data lokal hanya tersedia untuk versi berlisensi aktif. Silakan lakukan aktivasi lisensi Anda terlebih dahulu untuk membuka fitur ini.",
+      "backButton": "Kembali ke Pengaturan"
+    },
     "title": "Backup & Restore",
     "exportButton": "Export Backup (JSON)",
     "importButton": "Import / Restore Data",
