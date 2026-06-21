@@ -23,17 +23,11 @@ import {
 } from 'lucide-react';
 
 const ADD_ONS_DATA = [
-  { id: 1, name: "Role Tambahan", price: "Rp 49.000/bln", desc: "Tambah role kasir, staff, atau admin sesuai kebutuhan outlet Anda.", category: "fitur" },
-  { id: 2, name: "Dashboard Stok Real-time", price: "Rp 99.000/bln", desc: "Pantau pergerakan stok barang masuk dan keluar secara langsung.", category: "dashboard" },
-  { id: 3, name: "Food Cost HPP Otomatis", price: "Rp 99.000/bln", desc: "Hitung harga pokok penjualan dan profit margin otomatis per menu.", category: "dashboard" },
-  { id: 4, name: "QR Self-Order", price: "Rp 109.000/bln", desc: "Pelanggan bisa langsung pesan & bayar lewat scan kode QR di meja.", category: "fitur" },
-  { id: 5, name: "KDS Dapur (Kitchen Display)", price: "Rp 149.000/bln", desc: "Tampilkan pesanan masuk langsung ke layar dapur secara instan.", category: "operasional" },
-  { id: 6, name: "Loyalty Program", price: "Rp 149.000/bln", desc: "Kelola poin belanja, voucher diskon, dan reward untuk pelanggan setia.", category: "fitur" },
-  { id: 7, name: "Outlet Tambahan", price: "Rp 299.000/outlet/bln", desc: "Kelola banyak outlet/cabang dalam satu dashboard owner terpusat.", category: "operasional" },
-  { id: 8, name: "Dashboard Keuangan", price: "Rp 299.000/bln", desc: "Laporan neraca, laba rugi, dan analisis arus kas otomatis terintegrasi.", category: "dashboard" },
-  { id: 9, name: "Inter-Branch Transfer", price: "Rp 499.000/bln", desc: "Transfer stok dan koordinasi inventaris antarcabang dengan mudah.", category: "operasional" },
-  { id: 10, name: "Absensi Karyawan", price: "Rp 499.000/bln", desc: "Sistem absensi karyawan dengan foto/lokasi langsung terhubung ke POS.", category: "operasional" },
-  { id: 11, name: "Training Kasir On-site", price: "Rp 399.000/sesi", desc: "Sesi pelatihan dan setup perangkat kasir langsung di lokasi Anda.", category: "operasional" }
+  { id: 1, name: "Cloud Auto-Backup & Sync", price: "Rp 29.000/bln", desc: "Sinkronisasi data otomatis ke cloud secara real-time dan aman.", category: "dashboard" },
+  { id: 2, name: "Kertas Roll Thermal (Pack)", price: "Rp 49.000/pack", desc: "Bundel kertas struk thermal berkualitas isi 10 roll (58mm/80mm).", category: "operasional" },
+  { id: 3, name: "Setup Hardware & Training Kasir", price: "Rp 199.000/sesi", desc: "Jasa instalasi perangkat keras & pelatihan karyawan kasir secara remote.", category: "operasional" },
+  { id: 4, name: "Paket Bundel Printer Bluetooth", price: "Rp 349.000/unit", desc: "Printer thermal bluetooth 58mm portable siap pakai untuk cetak struk.", category: "operasional" },
+  { id: 5, name: "Kustomisasi Cetak Struk", price: "Rp 149.000", desc: "Penyesuaian layout struk khusus dengan tambahan logo & footer kustom Anda.", category: "fitur" }
 ];
 
 const FAQS_DATA = [
@@ -155,17 +149,20 @@ export default function LandingPage() {
     if (billingMode === 'monthly') {
       return {
         lite: { price: 'Rp 149.000', period: '/ bulan' },
-        pro: { price: 'Rp 299.000', period: '/ bulan' }
+        pro: { price: 'Rp 299.000', period: '/ bulan' },
+        v1: { price: 'Rp 199.000', period: ' sekali bayar', isLifetime: true }
       };
     } else if (billingMode === 'annual') {
       return {
         lite: { price: 'Rp 1.490.000', period: '/ tahun', discount: 'Hemat Rp 298.000' },
-        pro: { price: 'Rp 2.999.000', period: '/ tahun', discount: 'Hemat Rp 589.000' }
+        pro: { price: 'Rp 2.999.000', period: '/ tahun', discount: 'Hemat Rp 589.000' },
+        v1: { price: 'Rp 199.000', period: ' sekali bayar', isLifetime: true }
       };
     } else {
       return {
         lite: { price: 'Rp 3.000.000', period: ' sekali bayar', isLifetime: true },
-        pro: { price: 'Rp 6.000.000', period: ' sekali bayar', isLifetime: true }
+        pro: { price: 'Rp 6.000.000', period: ' sekali bayar', isLifetime: true },
+        v1: { price: 'Rp 199.000', period: ' sekali bayar', isLifetime: true }
       };
     }
   }, [billingMode]);
@@ -480,7 +477,7 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Paket UMKM Lite */}
             <motion.div 
               initial={{ opacity: 0, x: -30 }}
@@ -554,8 +551,8 @@ export default function LandingPage() {
 
             {/* Paket UMKM Pro */}
             <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ type: "spring", duration: 0.8 }}
               className="flex flex-col rounded-3xl bg-white border-2 border-[#6e150f] p-8 shadow-xl shadow-[#6e150f]/10 relative overflow-hidden group"
@@ -626,6 +623,75 @@ export default function LandingPage() {
                 className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 bg-gradient-to-r from-[#6e150f] to-[#b92a1c] text-[#F5EFE6] hover:shadow-lg hover:shadow-[#6e150f]/20 transition-all text-center"
               >
                 Mulai Trial Pro 30 Hari
+              </Link>
+            </motion.div>
+
+            {/* Paket Inspira POS v1 (Offline-First) */}
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", duration: 0.8 }}
+              className="flex flex-col rounded-3xl bg-white border border-[#d0a139]/40 p-8 shadow-xl shadow-[#d0a139]/5 relative overflow-hidden group hover:border-[#d0a139] transition-all"
+            >
+              <div className="absolute top-0 right-0 bg-[#d0a139] text-[#1A1A1A] font-extrabold text-[9px] uppercase tracking-wider py-1 px-4 rounded-bl-xl shadow-sm">
+                Beli Putus
+              </div>
+              
+              <h3 className="text-xl font-extrabold text-[#6e150f] mb-1 flex items-center gap-1.5">
+                Inspira POS
+              </h3>
+              <p className="text-xs text-muted-foreground mb-6">Sistem kasir offline-first lengkap sekali bayar, selamanya.</p>
+              
+              <div className="flex items-baseline mb-6">
+                <span className="text-4xl font-black tracking-tight text-[#1A1A1A]">{pricing.v1.price}</span>
+                <span className="text-xs text-muted-foreground font-semibold ml-1">{pricing.v1.period}</span>
+              </div>
+
+              <ul className="space-y-4 mb-8 text-sm flex-1">
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span className="font-semibold text-emerald-700">Lisensi Aktif Offline Selamanya</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Kapasitas Produk &amp; Transaksi Tanpa Batas</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Multi-User (Owner + Staff/Kasir) via PIN</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Cetak Struk Thermal (Bluetooth/USB)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Manajemen Stok Barang &amp; Supplier</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Pencatatan Utang Pelanggan &amp; Cicilan</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Pencatatan Pengeluaran Toko</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Custom Modifier &amp; Diskon Produk</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Ekspor Laporan Harian ke PDF &amp; Excel</span>
+                </li>
+              </ul>
+
+              <Link 
+                to="/dashboard" 
+                className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 border-2 border-[#d0a139] text-[#1A1A1A] hover:bg-[#d0a139]/5 transition-all text-center animate-pulse"
+              >
+                Coba Demo Gratis
               </Link>
             </motion.div>
           </div>
