@@ -35,9 +35,10 @@ export default function AppLayout() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/clients/license-status?deviceId=${encodeURIComponent(storeSettings.deviceId)}`);
         if (res.status === 404) {
-          console.warn('Toko ini tidak ditemukan di server (kemungkinan dihapus). Mereset pengaturan toko...');
-          await db.storeSettings.clear();
-          toast.error('Toko Anda telah dihapus atau dinonaktifkan dari panel admin. Silakan daftarkan ulang toko Anda.');
+          console.warn('Toko ini tidak ditemukan di server (kemungkinan dihapus). Menandai sebagai REVOKED...');
+          await db.storeSettings.update(storeSettings.id!, {
+            licenseStatus: 'REVOKED'
+          });
           return;
         }
 
@@ -76,9 +77,9 @@ export default function AppLayout() {
     return <Onboarding onComplete={() => { /* Dexie live query will auto-refresh */ }} />;
   }
 
-  // Intercept if license has expired
+  // Intercept if license has expired or is revoked from admin
   const licenseStatus = getLicenseStatus(storeSettings);
-  if (licenseStatus === 'EXPIRED') {
+  if (licenseStatus === 'EXPIRED' || licenseStatus === 'REVOKED') {
     return <LicenseBlockScreen storeSettings={storeSettings} />;
   }
 

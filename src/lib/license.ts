@@ -52,10 +52,11 @@ export async function validateLicenseKey(storeName: string, deviceId: string, li
 /**
  * Helper to calculate license status synchronously based on loaded settings.
  */
-export function getLicenseStatus(settings: any): 'TRIAL' | 'ACTIVE' | 'EXPIRED' {
+export function getLicenseStatus(settings: any): 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'REVOKED' {
   if (!settings) return 'TRIAL';
   if (settings.licenseStatus === 'ACTIVE') return 'ACTIVE';
   if (settings.licenseStatus === 'EXPIRED') return 'EXPIRED';
+  if (settings.licenseStatus === 'REVOKED') return 'REVOKED';
   if (!settings.trialStartedAt) return 'TRIAL';
   
   const startedAt = new Date(settings.trialStartedAt);
