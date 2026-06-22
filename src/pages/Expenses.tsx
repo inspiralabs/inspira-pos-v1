@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import { useTranslation } from 'react-i18next';
 import NumberInput from '@/components/NumberInput';
+import { ProGate } from '@/components/ProGate';
 
 type RangePreset = 'today' | '7' | '30' | 'month' | 'all';
 
@@ -246,293 +247,295 @@ export default function ExpensesPage() {
   const noPaymentMethods = !paymentMethods || paymentMethods.length === 0;
 
   return (
-    <div className="px-4 pt-6 pb-20 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link to="/settings">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <ChevronLeft className="w-4 h-4" />
+    <ProGate featureKey="expense_tracking">
+      <div className="px-4 pt-6 pb-20 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Link to="/settings">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-warning" />
+              {t('expenses.title')}
+            </h1>
+          </div>
+          {canManage && (
+            <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
+              <Plus className="w-4 h-4" /> {t('expenses.add')}
             </Button>
-          </Link>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-warning" />
-            {t('expenses.title')}
-          </h1>
+          )}
         </div>
-        {canManage && (
-          <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
-            <Plus className="w-4 h-4" /> {t('expenses.add')}
-          </Button>
-        )}
-      </div>
 
-      {/* Range filter */}
-      <div className="flex flex-wrap gap-2">
-        {(['today', '7', '30', 'month', 'all'] as RangePreset[]).map((r) => (
-          <button
-            key={r}
-            onClick={() => setRange(r)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-              range === r
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-muted bg-background text-muted-foreground'
-            }`}
-          >
-            {rangeKeyToLabel(r)}
-          </button>
-        ))}
-      </div>
-
-      {/* Total summary */}
-      <Card className="border-0 shadow-sm bg-warning/5">
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-warning/15 text-warning flex items-center justify-center shrink-0">
-            <Receipt className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              {t('expenses.summary.totalExpenses', { range: rangeKeyToLabel(range) })}
-            </p>
-            <p className="text-lg font-bold">{rp(totalAmount)}</p>
-            <p className="text-[10px] text-muted-foreground">
-              {t('expenses.summary.count', { count: filtered.length })}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Category filter */}
-      <div className="flex items-center gap-2">
-        <Select value={filterCategoryId} onValueChange={setFilterCategoryId}>
-          <SelectTrigger className="h-10 flex-1">
-            <SelectValue placeholder={t('expenses.categoryFilter.placeholder')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('expenses.categoryFilter.all')}</SelectItem>
-            {categories?.map((c) => (
-              <SelectItem key={c.id} value={String(c.id)}>
-                {c.icon} {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {filterCategoryId !== 'all' && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 shrink-0"
-            onClick={() => setFilterCategoryId('all')}
-            title={t('expenses.clearFilter')}
-          >
-            <FilterX className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* List */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-12">
-          <Wallet className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">
-            {expenses && expenses.length === 0
-              ? t('expenses.empty.none')
-              : t('expenses.empty.filtered')}
-          </p>
+        {/* Range filter */}
+        <div className="flex flex-wrap gap-2">
+          {(['today', '7', '30', 'month', 'all'] as RangePreset[]).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                range === r
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-muted bg-background text-muted-foreground'
+              }`}
+            >
+              {rangeKeyToLabel(r)}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((exp) => {
-            const cat = getCategory(exp.categoryId);
-            return (
-              <Card key={exp.id} className="border-0 shadow-sm">
-                <CardContent className="p-3">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-base"
-                      style={{ backgroundColor: (cat?.color ?? '#6B7280') + '20' }}
-                    >
-                      {cat?.icon ?? '📦'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold truncate">{exp.title}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {cat?.name ?? '—'} · {getPaymentName(exp.paymentMethodId)}
+
+        {/* Total summary */}
+        <Card className="border-0 shadow-sm bg-warning/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-warning/15 text-warning flex items-center justify-center shrink-0">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                {t('expenses.summary.totalExpenses', { range: rangeKeyToLabel(range) })}
+              </p>
+              <p className="text-lg font-bold">{rp(totalAmount)}</p>
+              <p className="text-[10px] text-muted-foreground">
+                {t('expenses.summary.count', { count: filtered.length })}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Category filter */}
+        <div className="flex items-center gap-2">
+          <Select value={filterCategoryId} onValueChange={setFilterCategoryId}>
+            <SelectTrigger className="h-10 flex-1">
+              <SelectValue placeholder={t('expenses.categoryFilter.placeholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('expenses.categoryFilter.all')}</SelectItem>
+              {categories?.map((c) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  {c.icon} {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filterCategoryId !== 'all' && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 shrink-0"
+              onClick={() => setFilterCategoryId('all')}
+              title={t('expenses.clearFilter')}
+            >
+              <FilterX className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+
+        {/* List */}
+        {filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <Wallet className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">
+              {expenses && expenses.length === 0
+                ? t('expenses.empty.none')
+                : t('expenses.empty.filtered')}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map((exp) => {
+              const cat = getCategory(exp.categoryId);
+              return (
+                <Card key={exp.id} className="border-0 shadow-sm">
+                  <CardContent className="p-3">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-base"
+                        style={{ backgroundColor: (cat?.color ?? '#6B7280') + '20' }}
+                      >
+                        {cat?.icon ?? '📦'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold truncate">{exp.title}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {cat?.name ?? '—'} · {getPaymentName(exp.paymentMethodId)}
+                            </p>
+                          </div>
+                          <p className="text-sm font-bold text-warning shrink-0">
+                            -{rp(exp.amount)}
                           </p>
                         </div>
-                        <p className="text-sm font-bold text-warning shrink-0">
-                          -{rp(exp.amount)}
-                        </p>
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <Calendar className="w-3 h-3" />
-                        <span>{format(new Date(exp.date), 'dd MMM yyyy', { locale: dateLocale })}</span>
-                      </div>
-                      {exp.notes && (
-                        <p className="text-[11px] text-muted-foreground mt-1 italic line-clamp-2">
-                          {exp.notes}
-                        </p>
-                      )}
-                      {canManage && (
-                        <div className="flex gap-1 mt-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs gap-1"
-                            onClick={() => openEdit(exp)}
-                          >
-                            <Edit2 className="w-3 h-3" /> {t('expenses.edit')}
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs text-destructive gap-1"
-                            onClick={() => setDeleteTarget(exp)}
-                          >
-                            <Trash2 className="w-3 h-3" /> {t('expenses.delete')}
-                          </Button>
+                        <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <Calendar className="w-3 h-3" />
+                          <span>{format(new Date(exp.date), 'dd MMM yyyy', { locale: dateLocale })}</span>
                         </div>
-                      )}
+                        {exp.notes && (
+                          <p className="text-[11px] text-muted-foreground mt-1 italic line-clamp-2">
+                            {exp.notes}
+                          </p>
+                        )}
+                        {canManage && (
+                          <div className="flex gap-1 mt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs gap-1"
+                              onClick={() => openEdit(exp)}
+                            >
+                              <Edit2 className="w-3 h-3" /> {t('expenses.edit')}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-destructive gap-1"
+                              onClick={() => setDeleteTarget(exp)}
+                            >
+                              <Trash2 className="w-3 h-3" /> {t('expenses.delete')}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? t('expenses.dialog.editTitle') : t('expenses.dialog.addTitle')}
-            </DialogTitle>
-          </DialogHeader>
-
-          {(noCategories || noPaymentMethods) && (
-            <div className="rounded-xl bg-warning/10 border border-warning/30 p-3 text-xs text-foreground">
-              {noCategories && (
-                <p>{t('expenses.dialog.missingCategories')}</p>
-              )}
-              {noPaymentMethods && (
-                <p>{t('expenses.dialog.missingPaymentMethods')}</p>
-              )}
-            </div>
-          )}
-
-          <div className="space-y-4 mt-2">
-            <div className="space-y-1.5">
-              <Label>{t('expenses.dialog.titleLabel')}</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t('expenses.dialog.titlePlaceholder')}
-                className="h-11"
-                maxLength={120}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t('expenses.dialog.categoryLabel')}</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder={t('expenses.dialog.categoryPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories?.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.icon} {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t('expenses.dialog.amountLabel')}</Label>
-                <NumberInput
-                  value={amount}
-                  onChange={setAmount}
-                  placeholder={t('expenses.dialog.amountPlaceholder')}
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('expenses.dialog.dateLabel')}</Label>
-                <Input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="h-11"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t('expenses.dialog.methodLabel')}</Label>
-              <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder={t('expenses.dialog.methodPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethods?.map((pm) => (
-                    <SelectItem key={pm.id} value={String(pm.id)}>
-                      {pm.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t('expenses.dialog.notesLabel')}</Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={t('expenses.dialog.notesPlaceholder')}
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-
-            <Button
-              className="w-full h-12 text-base font-semibold"
-              onClick={handleSave}
-              disabled={noCategories || noPaymentMethods}
-            >
-              {editing ? t('expenses.dialog.saveButton') : t('expenses.dialog.addButton')}
-            </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-        </DialogContent>
-      </Dialog>
+        )}
 
-      {/* Delete confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <AlertDialogContent className="max-w-[90vw] rounded-xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('expenses.deleteDialog.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('expenses.deleteDialog.description', {
-                title: deleteTarget?.title ?? '',
-                amount: deleteTarget ? rp(deleteTarget.amount) : '',
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('expenses.deleteDialog.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('expenses.deleteDialog.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {/* Add/Edit Dialog */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editing ? t('expenses.dialog.editTitle') : t('expenses.dialog.addTitle')}
+              </DialogTitle>
+            </DialogHeader>
+
+            {(noCategories || noPaymentMethods) && (
+              <div className="rounded-xl bg-warning/10 border border-warning/30 p-3 text-xs text-foreground">
+                {noCategories && (
+                  <p>{t('expenses.dialog.missingCategories')}</p>
+                )}
+                {noPaymentMethods && (
+                  <p>{t('expenses.dialog.missingPaymentMethods')}</p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <Label>{t('expenses.dialog.titleLabel')}</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={t('expenses.dialog.titlePlaceholder')}
+                  className="h-11"
+                  maxLength={120}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>{t('expenses.dialog.categoryLabel')}</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder={t('expenses.dialog.categoryPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.icon} {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>{t('expenses.dialog.amountLabel')}</Label>
+                  <NumberInput
+                    value={amount}
+                    onChange={setAmount}
+                    placeholder={t('expenses.dialog.amountPlaceholder')}
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t('expenses.dialog.dateLabel')}</Label>
+                  <Input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="h-11"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>{t('expenses.dialog.methodLabel')}</Label>
+                <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder={t('expenses.dialog.methodPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods?.map((pm) => (
+                      <SelectItem key={pm.id} value={String(pm.id)}>
+                        {pm.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>{t('expenses.dialog.notesLabel')}</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t('expenses.dialog.notesPlaceholder')}
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+
+              <Button
+                className="w-full h-12 text-base font-semibold"
+                onClick={handleSave}
+                disabled={noCategories || noPaymentMethods}
+              >
+                {editing ? t('expenses.dialog.saveButton') : t('expenses.dialog.addButton')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete confirmation */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent className="max-w-[90vw] rounded-xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('expenses.deleteDialog.title')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('expenses.deleteDialog.description', {
+                  title: deleteTarget?.title ?? '',
+                  amount: deleteTarget ? rp(deleteTarget.amount) : '',
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('expenses.deleteDialog.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {t('expenses.deleteDialog.confirm')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </ProGate>
   );
 }

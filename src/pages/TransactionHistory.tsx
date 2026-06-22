@@ -21,6 +21,7 @@ import ReceiptDialog from '@/components/Receipt';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+import { ProGate } from '@/components/ProGate';
 
 const LOCALES: Record<string, Locale> = { id: idLocale, en: enUS, ms };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -520,16 +521,18 @@ export default function TransactionHistory() {
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                className="w-full h-11 text-destructive border-destructive/30 hover:bg-destructive/5"
-                onClick={() => { setRestoreStock(true); setDeleteDialogOpen(true); }}
-                disabled={!can('delete_transaction')}
-                title={!can('delete_transaction') ? t('transactionHistory.detail.noDeletePermission') : undefined}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                {t('transactionHistory.detail.delete')}
-              </Button>
+              <ProGate featureKey="void_transaction">
+                <Button
+                  variant="outline"
+                  className="w-full h-11 text-destructive border-destructive/30 hover:bg-destructive/5"
+                  onClick={() => { setRestoreStock(true); setDeleteDialogOpen(true); }}
+                  disabled={!can('delete_transaction')}
+                  title={!can('delete_transaction') ? t('transactionHistory.detail.noDeletePermission') : undefined}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {t('transactionHistory.detail.delete')}
+                </Button>
+              </ProGate>
             </div>
           )}
         </SheetContent>

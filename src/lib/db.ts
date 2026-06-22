@@ -294,6 +294,7 @@ export interface StoreSettings {
   trialStartedAt?: Date | null;
   licenseKey?: string | null;
   isSyncedWithServer?: boolean;
+  planTier?: 'LITE' | 'PRO';
 }
 
 // === Database ===
@@ -751,6 +752,37 @@ class PosDatabase extends Dexie {
         if (s.licenseKey === undefined) s.licenseKey = null;
       });
     });
+
+    // Version 15 — Add planTier to storeSettings
+    this.version(15).stores({
+      categories:              '++id, name, isDeleted',
+      products:                '++id, name, &sku, categoryId, barcode, isDeleted, createdBy, updatedBy, unit',
+      suppliers:               '++id, name, isDeleted',
+      customers:               '++id, name, isDeleted',
+      stockIns:                '++id, productId, supplierId, date, createdBy',
+      stockOuts:               '++id, productId, date, createdBy',
+      hppHistory:              '++id, productId, date',
+      paymentMethods:          '++id, name, category',
+      transactions:            '++id, date, &receiptNumber, paymentMethodId, status, orderNumber, createdBy',
+      transactionItems:        '++id, transactionId, productId',
+      transactionItemOptions:  '++id, transactionItemId, optionGroupId, optionId',
+      storeSettings:           '++id',
+      units:                   '++id, &name, isDeleted',
+      users:                   '++id, &username, role, isActive',
+      expenseCategories:       '++id, name, isDeleted',
+      expenses:                '++id, date, categoryId, paymentMethodId, createdBy, isDeleted',
+      debts:                   '++id, &transactionId, customerId, status, createdAt',
+      debtPayments:            '++id, debtId, date, paymentMethodId, createdBy',
+      productOptionGroups:     '++id, productId, isDeleted',
+      productOptions:          '++id, groupId, isDeleted',
+    }).upgrade(async (tx) => {
+      const storeTable = tx.table('storeSettings');
+      await storeTable.toCollection().modify((s: Partial<StoreSettings>) => {
+        if (!s.planTier) {
+          s.planTier = s.licenseStatus === 'ACTIVE' ? 'PRO' : 'LITE';
+        }
+      });
+    });
   }
 }
 
@@ -811,6 +843,7 @@ export async function seedDefaultData() {
       licenseStatus: 'TRIAL',
       trialStartedAt: null,
       licenseKey: null,
+      planTier: 'LITE',
     });
   } else {
     // Fallback: if storeSettings exists but has no deviceId, generate one
@@ -821,6 +854,9 @@ export async function seedDefaultData() {
       if (settings.licenseStatus === undefined) updates.licenseStatus = 'TRIAL';
       if (settings.trialStartedAt === undefined) updates.trialStartedAt = null;
       if (settings.licenseKey === undefined) updates.licenseKey = null;
+      if (settings.planTier === undefined) {
+        updates.planTier = settings.licenseStatus === 'ACTIVE' ? 'PRO' : 'LITE';
+      }
       if (Object.keys(updates).length > 0) {
         await db.storeSettings.update(settings.id!, updates);
       }

@@ -49,12 +49,16 @@ const ADD_ONS_DATA = [
 ];
 
 const FAQS_DATA = [
-  { q: "Apa itu Lisensi Beli Putus?", a: "Lisensi Beli Putus adalah skema pembayaran sekali di depan. Dengan lisensi ini, Anda bisa menggunakan aplikasi secara offline selamanya tanpa biaya berlangganan bulanan, serta mendapatkan fitur sinkronisasi backup cloud lokal." },
-  { q: "Apakah aplikasi ini bisa berjalan tanpa internet?", a: "Ya, Inspira POS dirancang dengan arsitektur offline-first. Seluruh transaksi, manajemen menu, dan pencatatan stok tetap berjalan 100% lancar walau koneksi internet terputus. Data akan otomatis terpendam di penyimpanan lokal perangkat Anda." },
+  { q: "Apa itu Lisensi Beli Putus?", a: "Lisensi Beli Putus adalah skema pembayaran sekali di depan. Dengan lisensi ini, Anda bisa menggunakan aplikasi secara offline selamanya tanpa biaya berlangganan bulanan." },
+  { q: "Apakah aplikasi ini bisa berjalan tanpa internet?", a: "Ya, Inspira POS dirancang dengan arsitektur offline-first. Seluruh transaksi, manajemen menu, dan pencatatan stok tetap berjalan 100% lancar walau koneksi internet terputus. Data akan otomatis tersimpan aman di penyimpanan lokal perangkat Anda." },
   { q: "Perangkat apa saja yang didukung?", a: "Inspira POS dapat diakses dari browser komputer, laptop, tablet, iPad, maupun smartphone Android dan iOS. Anda juga bisa menginstalnya langsung sebagai aplikasi native (PWA) di layar utama perangkat Anda." },
   { q: "Bagaimana dengan printer kasir?", a: "Aplikasi mendukung cetak struk menggunakan printer thermal bluetooth (ukuran 58mm atau 80mm) serta printer jaringan/USB. Anda juga bisa membagikan struk belanja digital langsung lewat WhatsApp tanpa kertas." },
-  { q: "Bagaimana cara melakukan backup data?", a: "Anda bisa mengekspor database lokal kapan saja secara gratis dari menu Pengaturan (Backup & Restore), atau menggunakan fitur sinkronisasi otomatis Cloud Sync agar data terbackup aman secara real-time." }
+  { q: "Bedanya Lite dan Pro apa?", a: "Lite cocok untuk pemilik toko yang mengoperasikan kasir sendiri tanpa karyawan. Pro cocok untuk toko yang punya kasir/staf, butuh kontrol akses (multi-user), pencatatan hutang pelanggan, pencatatan pengeluaran, void transaksi, serta laporan keuangan lengkap seperti laba rugi." },
+  { q: "Kalau sudah beli Lite, bisa upgrade ke Pro?", a: "Bisa. Anda cukup membayar selisih harga (Rp 200.000) dan meminta kode lisensi Pro ke tim InsiraLabs via WhatsApp. Semua data toko Anda tetap aman, tanpa perlu melakukan reset data." },
+  { q: "Apakah ada biaya tambahan setelah beli?", a: "Tidak ada biaya berlangganan bulanan. Sekali bayar, aktif selamanya di device yang sama. Anda juga bisa menambah Add-ons opsional di masa depan jika membutuhkan fitur tambahan." },
+  { q: "Kalau ganti HP/perangkat bagaimana?", a: "Backup data Anda terlebih dahulu via fitur Export JSON di menu Pengaturan, lalu pasang di perangkat baru dan lakukan restore data. Untuk aktivasi ulang di perangkat baru, hubungi tim support InsiraLabs — tersedia 1x re-aktivasi gratis per pembelian lisensi." },
 ];
+
 
 // Framer Motion staggered variants
 const containerVariants = {
@@ -115,8 +119,6 @@ export default function LandingPage() {
 
   // Jangan render apapun saat akan redirect supaya tidak ada flash landing page
   if (isRedirecting.current) return null;
-
-  const [billingMode, setBillingMode] = useState<'monthly' | 'annual' | 'lifetime'>('monthly');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'fitur' | 'dashboard' | 'operasional'>('all');
   const [addonPlan, setAddonPlan] = useState<'lite' | 'pro'>('lite');
@@ -162,29 +164,6 @@ export default function LandingPage() {
     timer = setTimeout(handleTyping, typingSpeed);
     return () => clearTimeout(timer);
   }, [currentText, isDeleting, currentWordIndex, typingSpeed, words]);
-
-  // Pricing calculations
-  const pricing = useMemo(() => {
-    if (billingMode === 'monthly') {
-      return {
-        lite: { price: 'Rp 149.000', period: '/ bulan' },
-        pro: { price: 'Rp 299.000', period: '/ bulan' },
-        v1: { price: 'Rp 199.000', period: ' sekali bayar', isLifetime: true }
-      };
-    } else if (billingMode === 'annual') {
-      return {
-        lite: { price: 'Rp 1.490.000', period: '/ tahun', discount: 'Hemat Rp 298.000' },
-        pro: { price: 'Rp 2.999.000', period: '/ tahun', discount: 'Hemat Rp 589.000' },
-        v1: { price: 'Rp 199.000', period: ' sekali bayar', isLifetime: true }
-      };
-    } else {
-      return {
-        lite: { price: 'Rp 3.000.000', period: ' sekali bayar', isLifetime: true },
-        pro: { price: 'Rp 6.000.000', period: ' sekali bayar', isLifetime: true },
-        v1: { price: 'Rp 199.000', period: ' sekali bayar', isLifetime: true }
-      };
-    }
-  }, [billingMode]);
 
   // Filtering add-ons
   const filteredAddOns = useMemo(() => {
@@ -446,232 +425,37 @@ export default function LandingPage() {
             className="text-center max-w-2xl mx-auto mb-12 space-y-4"
           >
             <h2 className="text-3xl font-extrabold tracking-tight text-[#6e150f]">
-              Pilih Paket Sesuai Kebutuhan Bisnis Anda
+              Pilih Paket Sesuai Kebutuhan Toko Anda
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Tanpa biaya tersembunyi. Mulai gratis dan upgrade kapan pun usaha Anda berekspansi lebih besar.
+              Sekali bayar. Aktif selamanya. Tanpa biaya berlangganan bulanan.
             </p>
-
-            {/* Billing Mode Switcher Tabs */}
-            <div className="inline-flex p-1 rounded-full bg-[#6e150f]/5 border border-[#6e150f]/10 mt-4">
-              <button 
-                onClick={() => setBillingMode('monthly')}
-                className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative ${
-                  billingMode === 'monthly' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
-                }`}
-              >
-                {billingMode === 'monthly' && (
-                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full z-0" />
-                )}
-                <span className="relative z-10">SaaS Bulanan</span>
-              </button>
-              <button 
-                onClick={() => setBillingMode('annual')}
-                className={`relative px-5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
-                  billingMode === 'annual' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
-                }`}
-              >
-                {billingMode === 'annual' && (
-                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full z-0" />
-                )}
-                <span className="relative z-10 flex items-center gap-1">
-                  SaaS Tahunan
-                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full leading-none transition-colors ${
-                    billingMode === 'annual' ? 'bg-[#d0a139] text-[#1A1A1A]' : 'bg-[#6e150f]/10 text-[#6e150f]'
-                  }`}>
-                    Hemat!
-                  </span>
-                </span>
-              </button>
-              <button 
-                onClick={() => setBillingMode('lifetime')}
-                className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative ${
-                  billingMode === 'lifetime' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
-                }`}
-              >
-                {billingMode === 'lifetime' && (
-                  <motion.div layoutId="activeBillingMode" className="absolute inset-0 bg-[#6e150f] rounded-full z-0" />
-                )}
-                <span className="relative z-10">Beli Putus (Lifetime)</span>
-              </button>
-            </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Paket UMKM Lite */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Inspira Offline Lite */}
             <motion.div 
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ type: "spring", duration: 0.8 }}
-              className="flex flex-col rounded-3xl bg-white border border-[#6e150f]/10 p-8 shadow-xl shadow-[#6e150f]/5 relative overflow-hidden group"
+              className="flex flex-col rounded-3xl bg-white border border-[#6e150f]/10 p-8 shadow-xl shadow-[#6e150f]/5 relative overflow-hidden group hover:border-[#6e150f]/30 transition-all duration-300"
             >
-              <AnimatePresence>
-                {billingMode === 'annual' && pricing.lite.discount && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="absolute top-4 right-4 text-[10px] font-extrabold text-[#6e150f] bg-[#6e150f]/10 border border-[#6e150f]/20 px-2.5 py-1 rounded-full"
-                  >
-                    {pricing.lite.discount}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <h3 className="text-xl font-extrabold text-[#6e150f] mb-1">UMKM Lite</h3>
-              <p className="text-xs text-muted-foreground mb-6">Cocok untuk gerobak, booth, and 1 operator kasir.</p>
+              <div className="absolute top-4 right-4 text-[10px] font-extrabold text-[#6e150f] bg-[#6e150f]/10 border border-[#6e150f]/20 px-2.5 py-1 rounded-full">
+                Paling Terjangkau
+              </div>
+              <h3 className="text-xl font-extrabold text-[#6e150f] mb-1">Inspira Offline Lite</h3>
+              <p className="text-xs text-muted-foreground mb-6">Untuk pemilik toko solo yang pegang semuanya sendiri.</p>
               
               <div className="flex items-baseline mb-6">
-                <span className="text-4xl font-black tracking-tight text-[#1A1A1A]">{pricing.lite.price}</span>
-                <span className="text-xs text-muted-foreground font-semibold ml-1">{pricing.lite.period}</span>
+                <span className="text-4xl font-black tracking-tight text-[#1A1A1A]">Rp 299.000</span>
+                <span className="text-xs text-muted-foreground font-semibold ml-1">/ sekali bayar / device</span>
               </div>
 
               <ul className="space-y-4 mb-8 text-sm flex-1">
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Maksimal 1 Cabang/Outlet</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Maksimal 1 User/Kasir</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Hingga 50 Menu Makanan &amp; Foto</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Metode Tunai + QRIS Statis</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Berjalan 100% Offline Mode</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Laporan Harian via Browser</span>
-                </li>
-                <li className="flex items-start gap-2.5 opacity-40">
-                  <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <span className="line-through">Tidak mendukung Export PDF/Excel</span>
-                </li>
-                <li className="flex items-start gap-2.5 opacity-40">
-                  <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <span className="line-through">Tanpa Menu Modifiers (Topping/Level)</span>
-                </li>
-              </ul>
-
-              <Link 
-                to="/#" 
-                className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 border-2 border-[#6e150f]/20 text-[#6e150f] hover:border-[#6e150f] hover:bg-[#6e150f]/5 transition-all text-center"
-              >
-                Mulai Trial 30 Hari
-              </Link>
-            </motion.div>
-
-            {/* Paket UMKM Pro */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ type: "spring", duration: 0.8 }}
-              className="flex flex-col rounded-3xl bg-white border-2 border-[#6e150f] p-8 shadow-xl shadow-[#6e150f]/10 relative overflow-hidden group"
-            >
-              <div className="absolute top-0 right-0 bg-[#d0a139] text-[#1A1A1A] font-extrabold text-[9px] uppercase tracking-wider py-1 px-4 rounded-bl-xl shadow-sm">
-                Terpopuler
-              </div>
-              <AnimatePresence>
-                {billingMode === 'annual' && pricing.pro.discount && (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className="absolute top-4 right-16 text-[10px] font-extrabold text-[#6e150f] bg-[#6e150f]/10 border border-[#6e150f]/20 px-2.5 py-1 rounded-full"
-                  >
-                    {pricing.pro.discount}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              
-              <h3 className="text-xl font-extrabold text-[#6e150f] mb-1 flex items-center gap-1.5">
-                UMKM Pro <Sparkles className="w-4 h-4 text-[#d0a139]" />
-              </h3>
-              <p className="text-xs text-muted-foreground mb-6">Untuk kafe kecil, resto mini, warung + multi-karyawan.</p>
-              
-              <div className="flex items-baseline mb-6">
-                <span className="text-4xl font-black tracking-tight text-[#1A1A1A]">{pricing.pro.price}</span>
-                <span className="text-xs text-muted-foreground font-semibold ml-1">{pricing.pro.period}</span>
-              </div>
-
-              <ul className="space-y-4 mb-8 text-sm flex-1">
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="font-medium text-[#1A1A1A]">Maksimal 1 Cabang/Outlet</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Hingga 5 Akun User (Owner + Kasir)</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="font-medium">Menu Makanan Tidak Terbatas + Foto</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Input Order &amp; Split Bills</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Menu Modifier &amp; Custom Toppings</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Diskon Khusus Default Produk</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Export Laporan ke PDF &amp; Excel</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="font-semibold text-emerald-700">Backup Cloud Otomatis (Cloud Sync)</span>
-                </li>
-              </ul>
-
-              <Link 
-                to="#"
-                className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 bg-gradient-to-r from-[#6e150f] to-[#b92a1c] text-[#F5EFE6] hover:shadow-lg hover:shadow-[#6e150f]/20 transition-all text-center"
-              >
-                Mulai Trial Pro 30 Hari
-              </Link>
-            </motion.div>
-
-            {/* Paket Inspira POS v1 (Offline-First) */}
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ type: "spring", duration: 0.8 }}
-              className="flex flex-col rounded-3xl bg-white border border-[#d0a139]/40 p-8 shadow-xl shadow-[#d0a139]/5 relative overflow-hidden group hover:border-[#d0a139] transition-all"
-            >
-              <div className="absolute top-0 right-0 bg-[#d0a139] text-[#1A1A1A] font-extrabold text-[9px] uppercase tracking-wider py-1 px-4 rounded-bl-xl shadow-sm">
-                Beli Putus
-              </div>
-              
-              <h3 className="text-xl font-extrabold text-[#6e150f] mb-1 flex items-center gap-1.5">
-                Inspira POS
-              </h3>
-              <p className="text-xs text-muted-foreground mb-6">Sistem kasir offline-first lengkap sekali bayar, selamanya.</p>
-              
-              <div className="flex items-baseline mb-6">
-                <span className="text-4xl font-black tracking-tight text-[#1A1A1A]">{pricing.v1.price}</span>
-                <span className="text-xs text-muted-foreground font-semibold ml-1">{pricing.v1.period}</span>
-              </div>
-
-              <ul className="space-y-4 mb-8 text-sm flex-1">
-                <li className="flex items-start gap-2.5">
-                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="font-semibold text-emerald-700">Lisensi Aktif Offline Selamanya</span>
+                  <span>Lisensi Aktif Offline Selamanya</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -679,56 +463,240 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Multi-User (Owner + Staff/Kasir) via PIN</span>
+                  <span>Custom Modifier &amp; Variasi Produk</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Cetak Struk Thermal (Bluetooth/USB)</span>
+                  <span>Diskon per Item &amp; per Transaksi</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Manajemen Stok Barang &amp; Supplier</span>
+                  <span>Open Bill (Simpan Tagihan Sementara)</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Pencatatan Utang Pelanggan &amp; Cicilan</span>
+                  <span>Manajemen Stok &amp; HPP Otomatis</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Pencatatan Pengeluaran Toko</span>
+                  <span>Sold Out Toggle &amp; Alert Stok Menipis</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Custom Modifier &amp; Diskon Produk</span>
+                  <span>Cetak Struk Thermal Bluetooth (58/80mm)</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Ekspor Laporan Harian ke PDF &amp; Excel</span>
+                  <span>Laporan Harian &amp; Grafik 7 Hari</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Backup &amp; Restore Data (JSON)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>1 Pengguna (Pemilik Toko)</span>
+                </li>
+                <li className="flex items-start gap-2.5 text-muted-foreground/60">
+                  <X className="w-5 h-5 text-red-500/60 flex-shrink-0 mt-0.5" />
+                  <span>Multi-User &amp; PIN Kasir <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded ml-1">PRO</span></span>
+                </li>
+                <li className="flex items-start gap-2.5 text-muted-foreground/60">
+                  <X className="w-5 h-5 text-red-500/60 flex-shrink-0 mt-0.5" />
+                  <span>Database Pelanggan &amp; Hutang <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded ml-1">PRO</span></span>
+                </li>
+                <li className="flex items-start gap-2.5 text-muted-foreground/60">
+                  <X className="w-5 h-5 text-red-500/60 flex-shrink-0 mt-0.5" />
+                  <span>Pencatatan Pengeluaran Toko <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded ml-1">PRO</span></span>
+                </li>
+                <li className="flex items-start gap-2.5 text-muted-foreground/60">
+                  <X className="w-5 h-5 text-red-500/60 flex-shrink-0 mt-0.5" />
+                  <span>Ekspor Laporan PDF &amp; Excel <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded ml-1">PRO</span></span>
                 </li>
               </ul>
 
-              <Link 
-                to="/dashboard" 
-                className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 border-2 border-[#d0a139] text-[#1A1A1A] hover:bg-[#d0a139]/5 transition-all text-center animate-pulse"
+              <a 
+                href="https://wa.me/6282124533265?text=Halo%20Admin%20Inspira%20POS%2C%20saya%20tertarik%20membeli%20paket%20Inspira%20Offline%20Lite%20(Rp%20299.000%2Fdevice)%20untuk%20toko%20saya."
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 border-2 border-[#6e150f]/20 text-[#6e150f] hover:border-[#6e150f] hover:bg-[#6e150f]/5 transition-all text-center"
               >
-                Coba Demo Gratis
-              </Link>
+                Beli Lite — Rp 299.000
+              </a>
+            </motion.div>
+
+            {/* Inspira Offline Pro */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", duration: 0.8 }}
+              className="flex flex-col rounded-3xl bg-white border-2 border-[#6e150f] p-8 shadow-xl shadow-[#6e150f]/10 relative overflow-hidden group hover:shadow-2xl transition-all duration-300"
+            >
+              <div className="absolute top-0 right-0 bg-[#d0a139] text-[#1A1A1A] font-extrabold text-[9px] uppercase tracking-wider py-1 px-4 rounded-bl-xl shadow-sm">
+                ⭐ Recommended
+              </div>
+              
+              <h3 className="text-xl font-extrabold text-[#6e150f] mb-1 flex items-center gap-1.5">
+                Inspira Offline Pro <Sparkles className="w-4 h-4 text-[#d0a139]" />
+              </h3>
+              <p className="text-xs text-muted-foreground mb-6">Untuk toko dengan karyawan kasir dan butuh kontrol penuh.</p>
+              
+              <div className="flex items-baseline mb-6">
+                <span className="text-4xl font-black tracking-tight text-[#1A1A1A]">Rp 499.000</span>
+                <span className="text-xs text-muted-foreground font-semibold ml-1">/ sekali bayar / device</span>
+              </div>
+
+              <ul className="space-y-4 mb-8 text-sm flex-1">
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span className="font-semibold text-emerald-700">Semua Fitur Inspira Offline Lite</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span className="font-medium">Multi-User: Owner + Staff/Kasir (Tanpa Batas Akun)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Login PIN 4–6 Digit per Kasir (Enkripsi Lokal)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Kontrol Akses Granular per Staf</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Manajemen Shift Kasir</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Void / Cancel Transaksi (PIN Owner)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Bagi Tagihan (Split Bill)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Database Supplier &amp; Pelanggan</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Pencatatan Hutang &amp; Cicilan Pelanggan</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Pencatatan Pengeluaran Operasional Toko</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Laporan Laba Rugi Sederhana (P&amp;L)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Laporan per Kasir / Shift</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Grafik Penjualan 30 Hari terakhir</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span className="font-semibold text-emerald-700">Ekspor Laporan ke PDF &amp; Excel</span>
+                </li>
+              </ul>
+
+              <a 
+                href="https://wa.me/6282124533265?text=Halo%20Admin%20Inspira%20POS%2C%20saya%20tertarik%20membeli%20paket%20Inspira%20Offline%20Pro%20(Rp%20499.000%2Fdevice)%20untuk%20toko%20saya."
+                target="_blank"
+                rel="noreferrer"
+                className="w-full inline-flex items-center justify-center rounded-xl font-bold h-11 bg-gradient-to-r from-[#6e150f] to-[#b92a1c] text-[#F5EFE6] hover:shadow-lg hover:shadow-[#6e150f]/20 transition-all text-center"
+              >
+                Beli Pro — Rp 499.000
+              </a>
             </motion.div>
           </div>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-12 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-2 max-w-md mx-auto p-4 rounded-xl bg-white/40 border border-[#6e150f]/5"
-          >
-            <div className="flex items-center gap-1.5 font-semibold text-[#6e150f]">
-              <Info className="w-3.5 h-3.5" /> Biaya Setup &amp; Lisensi
-            </div>
-            <p>
-              Tingkatkan kapabilitas kasir Anda dengan membeli Add-ons modul kapan pun diperlukan secara fleksibel.
-            </p>
-          </motion.div>
+
+          {/* Comparison Table */}
+          <div className="mt-16 overflow-x-auto rounded-3xl border border-[#6e150f]/10 bg-white p-6 md:p-8 shadow-xl shadow-[#6e150f]/5">
+            <h3 className="text-xl font-extrabold text-[#6e150f] mb-6 text-center">Tabel Perbandingan Fitur Detail</h3>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[#6e150f]/10 text-xs font-semibold text-[#1A1A1A]">
+                  <th className="py-3 px-4">Fitur Utama</th>
+                  <th className="py-3 px-4 text-center">Offline Lite</th>
+                  <th className="py-3 px-4 text-center">Offline Pro</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#6e150f]/5 text-xs sm:text-sm">
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Harga</td>
+                  <td className="py-3.5 px-4 text-center text-[#6e150f] font-bold">Rp 299.000</td>
+                  <td className="py-3.5 px-4 text-center text-[#6e150f] font-bold">Rp 499.000</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Masa Aktif Lisensi</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">Sekali Bayar (Selamanya)</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">Sekali Bayar (Selamanya)</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Kapasitas Produk &amp; Transaksi</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">Unlimited</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">Unlimited</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Pengguna</td>
+                  <td className="py-3.5 px-4 text-center">1 (Owner)</td>
+                  <td className="py-3.5 px-4 text-center font-medium text-emerald-700 bg-emerald-50/50 rounded-lg">Owner + Staff tak terbatas</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Login PIN &amp; Shift Kasir</td>
+                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Void Transaksi &amp; Otorisasi PIN</td>
+                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Bagi Tagihan (Split Bill)</td>
+                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Custom Modifiers &amp; Topping</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Manajemen Stok &amp; HPP Otomatis</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Database Pelanggan &amp; Hutang</td>
+                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Pencatatan Pengeluaran Toko</td>
+                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Laporan Laba Rugi (P&amp;L)</td>
+                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-medium">Ekspor Laporan PDF &amp; Excel</td>
+                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 

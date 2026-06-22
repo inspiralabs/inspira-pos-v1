@@ -24,6 +24,7 @@ import { APP_VERSION } from '@/lib/app-version';
 import { useTranslation, Trans } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { getLicenseStatus, getTrialDaysLeft, validateLicenseKey } from '@/lib/license';
+import { ProGate } from '@/components/ProGate';
 
 export default function Pengaturan() {
   const { t } = useTranslation('settings');
@@ -66,20 +67,23 @@ export default function Pengaturan() {
   const [licenseDialogOpen, setLicenseDialogOpen] = useState(false);
   const [inputKey, setInputKey] = useState('');
   const [activatingLicense, setActivatingLicense] = useState(false);
+  const [showUpdateKey, setShowUpdateKey] = useState(false);
 
   const handleActivateLicense = async () => {
     if (!inputKey.trim() || !storeSettings) return;
     setActivatingLicense(true);
     try {
-      const isValid = await validateLicenseKey(storeSettings.storeName, storeSettings.deviceId, inputKey.trim());
-      if (isValid) {
+      const result = await validateLicenseKey(storeSettings.deviceId, inputKey.trim());
+      if (result.valid && result.tier) {
         await db.storeSettings.update(storeSettings.id!, {
           licenseStatus: 'ACTIVE',
           licenseKey: inputKey.trim(),
+          planTier: result.tier,
         });
-        toast.success('Aplikasi Kasir berhasil diaktifkan secara permanen!');
+        toast.success(`Aplikasi Kasir (${result.tier === 'PRO' ? 'Offline Pro' : 'Offline Lite'}) berhasil diaktifkan secara permanen!`);
         setLicenseDialogOpen(false);
         setInputKey('');
+        setShowUpdateKey(false);
       } else {
         toast.error('Kode Aktivasi tidak valid. Periksa kembali nama toko atau kode Anda.');
       }
@@ -92,9 +96,19 @@ export default function Pengaturan() {
 
   const handleWhatsAppContact = () => {
     if (!storeSettings) return;
-    const waNumber = '628123456789'; // Placeholder WA number or user contact
+    const waNumber = '6282124533265'; // Inspira Labs WhatsApp
+    
+    let messageText = '';
+    if (storeSettings.licenseStatus === 'ACTIVE') {
+      const currentTier = storeSettings.planTier === 'PRO' ? 'Pro' : 'Lite';
+      const targetTier = storeSettings.planTier === 'PRO' ? 'Lite' : 'Pro';
+      messageText = `Halo Admin Inspira POS, saya ingin mengubah/upgrade/downgrade lisensi toko saya dari ${currentTier} ke ${targetTier}:\n`;
+    } else {
+      messageText = `Halo Admin Inspira POS, saya ingin mengaktifkan lisensi untuk toko:\n`;
+    }
+
     const message = encodeURIComponent(
-      `Halo Admin Inspira POS, saya ingin mengaktifkan lisensi untuk toko:\n` +
+      messageText +
       `- Nama Toko: ${storeSettings.storeName}\n` +
       `- Device ID: ${storeSettings.deviceId}`
     );
@@ -357,7 +371,9 @@ export default function Pengaturan() {
               </div>
               <div>
                 <p className="text-sm font-semibold">
-                  Status Lisensi: {storeSettings.licenseStatus === 'ACTIVE' ? 'Aktif Permanen' : 'Masa Trial 14 Hari'}
+                  Status Lisensi: {storeSettings.licenseStatus === 'ACTIVE' 
+                    ? `Aktif Permanen (${storeSettings.planTier === 'PRO' ? 'Offline Pro' : 'Offline Lite'})` 
+                    : 'Masa Trial 14 Hari'}
                 </p>
                 {storeSettings.licenseStatus !== 'ACTIVE' ? (
                   <p className="text-xs text-muted-foreground">
@@ -437,54 +453,56 @@ export default function Pengaturan() {
 
       {/* Karyawan & Akses links/activation */}
       {isOwner && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground">{t('employees.sectionTitle')}</h2>
-          {!multiUserEnabled ? (
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <UsersIcon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">{t('employees.activate.title')}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('employees.activate.description')}</p>
-                </div>
-                <Button size="sm" className="h-8 text-xs" onClick={openActivateDialog}>
-                  {t('employees.activate.button')}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              <Link to="/users" className="block">
-                <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-3 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">{t('employees.manage.title')}</p>
-                      <p className="text-[10px] text-muted-foreground">{t('employees.manage.description', { count: usersCount ?? 0 })}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </CardContent>
-                </Card>
-              </Link>
+        <ProGate featureKey="multi_user">
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-muted-foreground">{t('employees.sectionTitle')}</h2>
+            {!multiUserEnabled ? (
               <Card className="border-0 shadow-sm">
                 <CardContent className="p-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <UsersIcon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">{t('employees.active.title')}</p>
-                    <p className="text-[10px] text-muted-foreground">{t('employees.active.description')}</p>
+                    <p className="text-sm font-semibold">{t('employees.activate.title')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('employees.activate.description')}</p>
                   </div>
-                  <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => setDisableOpen(true)}>
-                    {t('employees.active.disable')}
+                  <Button size="sm" className="h-8 text-xs" onClick={openActivateDialog}>
+                    {t('employees.activate.button')}
                   </Button>
                 </CardContent>
               </Card>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <Link to="/users" className="block">
+                  <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-3 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold">{t('employees.manage.title')}</p>
+                        <p className="text-[10px] text-muted-foreground">{t('employees.manage.description', { count: usersCount ?? 0 })}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    </CardContent>
+                  </Card>
+                </Link>
+                <Card className="border-0 shadow-sm">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">{t('employees.active.title')}</p>
+                      <p className="text-[10px] text-muted-foreground">{t('employees.active.description')}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => setDisableOpen(true)}>
+                      {t('employees.active.disable')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        </ProGate>
       )}
 
       {/* Transaksi & Stok */}
@@ -499,42 +517,48 @@ export default function Pengaturan() {
             </CardContent>
           </Card>
         </Link>
-        {can('manage_supplier') && (
-          <Link to="/supplier" className="block">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Truck className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.supplier.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.supplier.description')}</p></div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-        {can('manage_customers') && (
-          <Link to="/customers" className="block">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.customers.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.customers.description')}</p></div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-        {can('manage_customers') && storeSettings?.allowDebt && (
-          <Link to="/debts" className="block">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold">{t('transactionsAndStock.debts.title')}</p>
-                  <p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.debts.description', { count: activeDebts?.length ?? 0 })}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        )}
+        <ProGate featureKey="supplier_management">
+          {can('manage_supplier') && (
+            <Link to="/supplier" className="block">
+              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Truck className="w-4 h-4" /></div>
+                  <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.supplier.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.supplier.description')}</p></div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+        </ProGate>
+        <ProGate featureKey="customer_database">
+          {can('manage_customers') && (
+            <Link to="/customers" className="block">
+              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
+                  <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.customers.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.customers.description')}</p></div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+        </ProGate>
+        <ProGate featureKey="debt_management">
+          {can('manage_customers') && storeSettings?.allowDebt && (
+            <Link to="/debts" className="block">
+              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">{t('transactionsAndStock.debts.title')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.debts.description', { count: activeDebts?.length ?? 0 })}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+        </ProGate>
         {can('manage_stock_inout') && (
           <>
             <Link to="/stock-in" className="block">
@@ -557,17 +581,19 @@ export default function Pengaturan() {
             </Link>
           </>
         )}
-        {(can('manage_expenses') || can('view_expenses')) && (
-          <Link to="/expenses" className="block">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.expenses.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.expenses.description')}</p></div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        )}
+        <ProGate featureKey="expense_tracking">
+          {(can('manage_expenses') || can('view_expenses')) && (
+            <Link to="/expenses" className="block">
+              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
+                  <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.expenses.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.expenses.description')}</p></div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+        </ProGate>
         {can('view_reports') && (
           <Link to="/stock-report" className="block">
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
@@ -585,18 +611,20 @@ export default function Pengaturan() {
       <div className="space-y-2">
         <h2 className="text-sm font-semibold text-muted-foreground">{t('masterData.sectionTitle')}</h2>
 
-        {can('manage_store_settings') && (
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">{t('masterData.allowDebt.title')}</p>
-                <p className="text-[10px] text-muted-foreground">{t('masterData.allowDebt.description')}</p>
-              </div>
-              <Switch checked={storeSettings?.allowDebt ?? false} onCheckedChange={handleToggleDebt} />
-            </CardContent>
-          </Card>
-        )}
+        <ProGate featureKey="debt_management">
+          {can('manage_store_settings') && (
+            <Card className="border-0 shadow-sm">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">{t('masterData.allowDebt.title')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('masterData.allowDebt.description')}</p>
+                </div>
+                <Switch checked={storeSettings?.allowDebt ?? false} onCheckedChange={handleToggleDebt} />
+              </CardContent>
+            </Card>
+          )}
+        </ProGate>
 
         {can('manage_categories_payments') && (
           <Link to="/settings/payment-methods" className="block">
@@ -622,17 +650,19 @@ export default function Pengaturan() {
           </Link>
         )}
 
-        {can('manage_categories_payments') && (
-          <Link to="/settings/expense-category" className="block">
-            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-              <CardContent className="p-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.expenseCategory.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.expenseCategory.description', { count: expenseCategories?.length ?? 0 })}</p></div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        )}
+        <ProGate featureKey="expense_tracking">
+          {can('manage_categories_payments') && (
+            <Link to="/settings/expense-category" className="block">
+              <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
+                  <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.expenseCategory.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.expenseCategory.description', { count: expenseCategories?.length ?? 0 })}</p></div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            </Link>
+          )}
+        </ProGate>
 
         <Link to="/settings/units" className="block">
           <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
@@ -936,7 +966,9 @@ export default function Pengaturan() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status Lisensi:</span>
                   <span className={`font-bold ${storeSettings.licenseStatus === 'ACTIVE' ? 'text-success' : 'text-warning'}`}>
-                    {storeSettings.licenseStatus === 'ACTIVE' ? 'Aktif Permanen' : 'Masa Trial'}
+                    {storeSettings.licenseStatus === 'ACTIVE' 
+                      ? `Aktif Permanen (${storeSettings.planTier === 'PRO' ? 'Offline Pro' : 'Offline Lite'})` 
+                      : 'Masa Trial'}
                   </span>
                 </div>
                 {storeSettings.licenseStatus === 'ACTIVE' && storeSettings.licenseKey && (
@@ -978,12 +1010,71 @@ export default function Pengaturan() {
                   </Button>
                 </>
               ) : (
-                <div className="p-3 bg-success/15 border border-success/35 text-success rounded-xl text-center">
-                  <p className="text-sm font-bold">Lisensi Aktif Selamanya</p>
-                  <p className="text-[11px] text-success/80 mt-1">Aplikasi telah diaktivasi dan semua batasan sandbox trial (maksimal produk/transaksi, watermark struk, dan ekspor laporan) dilepas secara permanen.</p>
+                <div className="space-y-4">
+                  <div className="p-3 bg-success/15 border border-success/35 text-success rounded-xl text-center">
+                    <p className="text-sm font-bold">Lisensi Aktif Selamanya</p>
+                    <p className="text-[11px] text-success/80 mt-1">Aplikasi telah diaktivasi dan semua batasan sandbox trial (maksimal produk/transaksi, watermark struk, dan ekspor laporan) dilepas secara permanen.</p>
+                  </div>
+
+                  {!showUpdateKey ? (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowUpdateKey(true)} 
+                      className="w-full h-11 border-dashed gap-1.5 text-xs bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      Ganti Kode Lisensi / Upgrade / Downgrade Tier
+                    </Button>
+                  ) : (
+                    <div className="space-y-3 p-3 rounded-xl border border-dashed border-border bg-muted/20">
+                      <div className="space-y-2">
+                        <Label htmlFor="settings-license-code" className="text-xs font-semibold flex items-center gap-1.5 text-left">
+                          <KeyRound className="w-3.5 h-3.5 text-primary" />
+                          Masukkan Kode Lisensi Baru
+                        </Label>
+                        <Input
+                          id="settings-license-code"
+                          placeholder="XXXX-XXXX-XXXX-XXXX"
+                          value={inputKey}
+                          onChange={e => setInputKey(e.target.value)}
+                          className="h-11 text-center font-mono text-sm tracking-wider uppercase"
+                          disabled={activatingLicense}
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          onClick={() => {
+                            setShowUpdateKey(false);
+                            setInputKey('');
+                          }} 
+                          className="flex-1 h-10 text-xs bg-transparent"
+                        >
+                          Batal
+                        </Button>
+                        <Button 
+                          onClick={handleActivateLicense} 
+                          className="flex-1 h-10 text-xs font-bold" 
+                          disabled={!inputKey.trim() || activatingLicense}
+                        >
+                          {activatingLicense ? 'Memproses...' : 'Simpan Lisensi'}
+                        </Button>
+                      </div>
+
+                      <Button 
+                        variant="ghost" 
+                        onClick={handleWhatsAppContact} 
+                        className="w-full h-9 text-[10px] text-[#25D366] hover:text-[#20BA5A] hover:bg-transparent bg-transparent gap-1 font-bold"
+                      >
+                        Hubungi Admin via WA untuk Upgrade/Downgrade
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+
           </DialogContent>
         </Dialog>
       )}

@@ -19,6 +19,7 @@ interface Client {
   trial_started_at: string;
   license_key: string | null;
   created_at: string;
+  plan_tier?: 'LITE' | 'PRO';
 }
 
 interface Admin {
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
   // Confirmation modals state
   const [genConfirmOpen, setGenConfirmOpen] = useState(false);
   const [pendingClientId, setPendingClientId] = useState<string | null>(null);
+  const [selectedPlanTier, setSelectedPlanTier] = useState<'LITE' | 'PRO'>('LITE');
   const [delConfirmOpen, setDelConfirmOpen] = useState(false);
   const [pendingAdminId, setPendingAdminId] = useState<string | null>(null);
   const [delClientConfirmOpen, setDelClientConfirmOpen] = useState(false);
@@ -161,8 +163,9 @@ export default function AdminDashboard() {
   };
 
   // Trigger Generate License confirmation modal
-  const triggerGenerateLicense = (clientId: string) => {
+  const triggerGenerateLicense = (clientId: string, currentTier?: 'LITE' | 'PRO') => {
     setPendingClientId(clientId);
+    setSelectedPlanTier(currentTier || 'LITE');
     setGenConfirmOpen(true);
   };
 
@@ -180,7 +183,7 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ clientId }),
+        body: JSON.stringify({ clientId, planTier: selectedPlanTier }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -343,6 +346,12 @@ export default function AdminDashboard() {
       return matchesSearch && matchesStatus;
     });
   }, [clients, searchQuery, filterStatus]);
+
+  const pendingClient = useMemo(() => {
+    return clients.find(c => c.id === pendingClientId);
+  }, [clients, pendingClientId]);
+
+  const isCurrentlyActive = pendingClient?.license_status === 'ACTIVE';
 
   if (!token) {
     // Render Login Screen
@@ -515,6 +524,7 @@ export default function AdminDashboard() {
                       <th className="p-3 font-semibold">Toko & Device ID</th>
                       <th className="p-3 font-semibold">Telepon & Alamat</th>
                       <th className="p-3 font-semibold">Daftar Pada</th>
+                      <th className="p-3 font-semibold text-center">Tier</th>
                       <th className="p-3 font-semibold text-center">Status</th>
                       <th className="p-3 font-semibold text-right">Aksi</th>
                     </tr>
@@ -522,7 +532,7 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {filteredClients.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="text-center py-10 text-slate-500">Tidak ada data klien ditemukan.</td>
+                        <td colSpan={6} className="text-center py-10 text-slate-500">Tidak ada data klien ditemukan.</td>
                       </tr>
                     ) : (
                       filteredClients.map(c => {
@@ -538,6 +548,15 @@ export default function AdminDashboard() {
                               <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-xs">{c.address || '-'}</p>
                             </td>
                             <td className="p-3 text-xs text-slate-700 dark:text-slate-300">{registerDate}</td>
+                            <td className="p-3 text-center">
+                              <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
+                                c.plan_tier === 'PRO'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                                  : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/30'
+                              }`}>
+                                {c.plan_tier || 'LITE'}
+                              </span>
+                            </td>
                             <td className="p-3 text-center">
                               <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                                 c.license_status === 'ACTIVE'
@@ -555,15 +574,27 @@ export default function AdminDashboard() {
                               {c.license_status !== 'ACTIVE' ? (
                                 <Button
                                   size="sm"
-                                  onClick={() => triggerGenerateLicense(c.id)}
+                                  onClick={() => triggerGenerateLicense(c.id, c.plan_tier)}
                                   className="h-8 bg-amber-500 hover:bg-amber-600 text-black font-bold gap-1 text-xs"
                                 >
                                   <Key className="w-3.5 h-3.5" /> Aktivasi
                                 </Button>
                               ) : (
-                                <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 px-2 py-1 rounded">
-                                  {c.license_key}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 px-2 py-1 rounded">
+                                    {c.license_key}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => triggerGenerateLicense(c.id, c.plan_tier)}
+                                    className="h-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-1 text-xs font-semibold"
+                                    title="Ubah Tier / Regenerasi Lisensi"
+                                  >
+                                    <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>Ubah</span>
+                                  </Button>
+                                </div>
                               )}
                               <Button
                                 variant="ghost"
@@ -725,19 +756,34 @@ export default function AdminDashboard() {
         <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl shadow-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-              <ShieldAlert className="w-5 h-5 text-amber-500" /> Konfirmasi Aktivasi Toko
+              <ShieldAlert className="w-5 h-5 text-amber-500" />
+              {isCurrentlyActive ? 'Ubah Tier / Regenerasi Lisensi' : 'Konfirmasi Aktivasi Toko'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-3">
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed text-left">
-              Apakah Anda yakin ingin memproses kode lisensi aktif permanen untuk toko ini? Klien akan langsung teraktivasi secara otomatis.
+              {isCurrentlyActive 
+                ? `Apakah Anda yakin ingin mengubah paket (tier) atau menerbitkan ulang kode lisensi untuk toko "${pendingClient?.store_name || ''}"? Klien harus memasukkan kode lisensi yang baru diterbitkan di aplikasi kasir offline mereka.`
+                : 'Apakah Anda yakin ingin memproses kode lisensi aktif permanen untuk toko ini? Klien akan langsung teraktivasi secara otomatis.'}
             </p>
+            <div className="space-y-1.5 text-left">
+              <Label htmlFor="planTierSelect" className="text-slate-700 dark:text-slate-300 text-xs font-semibold">Pilih Paket (Plan Tier)</Label>
+              <select
+                id="planTierSelect"
+                value={selectedPlanTier}
+                onChange={(e) => setSelectedPlanTier(e.target.value as 'LITE' | 'PRO')}
+                className="w-full h-10 px-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-md focus:border-amber-500 focus:ring-amber-500 text-sm focus:outline-none"
+              >
+                <option value="LITE">Lite (Rp 299.000)</option>
+                <option value="PRO">Pro (Rp 499.000)</option>
+              </select>
+            </div>
             <div className="flex gap-2 pt-2">
               <Button type="button" variant="outline" onClick={() => setGenConfirmOpen(false)} className="flex-1 h-11 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
                 Batal
               </Button>
               <Button onClick={handleGenerateLicense} className="flex-1 h-11 bg-amber-500 hover:bg-amber-600 text-black font-bold">
-                Ya, Aktivasi
+                {isCurrentlyActive ? 'Simpan & Terbitkan' : 'Ya, Aktivasi'}
               </Button>
             </div>
           </div>

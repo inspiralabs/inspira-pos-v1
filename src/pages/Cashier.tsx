@@ -24,6 +24,7 @@ import { trackEvent } from '@/lib/analytics';
 import CustomerPicker from '@/components/CustomerPicker';
 import LockedPage from '@/components/LockedPage';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { ProGate } from '@/components/ProGate';
 
 // Opsi yang dipilih saat transaksi
 interface SelectedOption {
@@ -350,10 +351,67 @@ export default function Kasir() {
       ? Math.min(subtotal, Math.max(0, Number(txDiscountValue) || 0))
       : 0;
   const total = Math.max(0, subtotal - txDiscountAmount);
+
+  // === Split Bill States ===
+  const [splitBillOpen, setSplitBillOpen] = useState(false);
+  const [splitMode, setSplitMode] = useState<'equal' | 'item'>('equal');
+  const [numSplits, setNumSplits] = useState(2);
+  const [paidSplits, setPaidSplits] = useState<boolean[]>([]);
+  const [splitItemQtys, setSplitItemQtys] = useState<Record<number, number>>({});
+  const [splitCart, setSplitCart] = useState<CartItem[] | null>(null);
+  const [splitPartCheckoutIndex, setSplitPartCheckoutIndex] = useState<number | null>(null);
+
+  // Auto initialize/resize paidSplits array when numSplits changes
+  useEffect(() => {
+    setPaidSplits(new Array(numSplits).fill(false));
+  }, [numSplits]);
+
+  const handleOpenSplitBill = () => {
+    if (cart.length === 0) {
+      toast.error(t('cashier.toast.cartEmpty') || 'Keranjang belanja kosong');
+      return;
+    }
+    const initialQtys: Record<number, number> = {};
+    cart.forEach((_, idx) => {
+      initialQtys[idx] = 0;
+    });
+    setSplitItemQtys(initialQtys);
+    setNumSplits(2);
+    setPaidSplits(new Array(2).fill(false));
+    setSplitCart(null);
+    setSplitPartCheckoutIndex(null);
+    setSplitBillOpen(true);
+  };
+
+  const currentSplitItems = useMemo(() => {
+    const items: CartItem[] = [];
+    cart.forEach((item, index) => {
+      const qty = splitItemQtys[index] || 0;
+      if (qty > 0) {
+        items.push({
+          ...item,
+          qty
+        });
+      }
+    });
+    return items;
+  }, [cart, splitItemQtys]);
+
+  const splitCartTotal = useMemo(() => {
+    return currentSplitItems.reduce((sum, item) => sum + getItemSubtotal(item), 0);
+  }, [currentSplitItems]);
+
+  const activeCheckoutTotal = splitPartCheckoutIndex !== null
+    ? Math.round(total / numSplits)
+    : splitCart
+      ? Math.max(0, splitCart.reduce((sum, item) => sum + getItemSubtotal(item), 0))
+      : total;
+
   const paidAmount = Number(paymentAmount) || 0;
-  const checkoutPaidAmount = useDebt ? Math.min(total, Math.max(0, paidAmount)) : paidAmount;
-  const debtAmount = useDebt ? Math.max(0, total - checkoutPaidAmount) : 0;
-  const change = useDebt ? 0 : paidAmount - total;
+  const checkoutPaidAmount = useDebt ? Math.min(activeCheckoutTotal, Math.max(0, paidAmount)) : paidAmount;
+  const debtAmount = useDebt ? Math.max(0, activeCheckoutTotal - checkoutPaidAmount) : 0;
+  const change = useDebt ? 0 : paidAmount - activeCheckoutTotal;
+
   const totalItemDiscount = cart.reduce((sum, item) => sum + getItemDiscountAmount(item), 0);
   const totalProfit = cart.reduce((sum, item) => sum + (item.product.price - item.product.hpp) * item.qty, 0) - totalItemDiscount - txDiscountAmount;
 
@@ -579,7 +637,7 @@ export default function Kasir() {
         toast.error(t('cashier.toast.selectCustomerForDebt'));
         return;
       }
-      if (paidAmount < 0 || paidAmount > total) {
+      if (paidAmount < 0 || paidAmount > activeCheckoutTotal) {
         toast.error(t('cashier.toast.paymentAmountRange', { symbol: currencySymbol }));
         return;
       }
@@ -587,7 +645,180 @@ export default function Kasir() {
         toast.error(t('cashier.toast.selectPaymentMethod'));
         return;
       }
-    } else if (!paymentMethodId || paidAmount < total) {
+    } else if (!paymentMethodId || paidAmount < activeCheckoutTotal) {
+      return;
+    }
+
+    if (splitPartCheckoutIndex !== null) {
+      // 1. Bagi Rata Mode: Save the split portion
+      const receiptNumber = `TX-SPLIT-${Date.now()}`;
+      const txData: Transaction = {
+        subtotal: activeCheckoutTotal,
+        discountType: null,
+        discountValue: 0,
+        discountAmount: 0,
+        total: activeCheckoutTotal,
+        paymentMethodId: checkoutPaidAmount > 0 ? Number(paymentMethodId) : 0,
+        paymentAmount: checkoutPaidAmount,
+        change,
+        profit: 0,
+        date: new Date(),
+        receiptNumber,
+        status: 'completed',
+        customerId,
+        customerName: (customerName.trim() ? `${customerName.trim()} (Split ${splitPartCheckoutIndex + 1}/${numSplits})` : `Bagi Rata ${splitPartCheckoutIndex + 1}/${numSplits}`),
+        tableNumber: tableNumber.trim() || undefined,
+        remarks: `Bagi Rata ${splitPartCheckoutIndex + 1}/${numSplits} - ${remarks.trim()}`.trim(),
+        createdBy: currentUser?.id,
+        debtAmount,
+      };
+
+      const txId = await db.transactions.add(txData);
+
+      if (debtAmount > 0) {
+        await db.debts.add({
+          transactionId: txId as number,
+          customerId: customerId!,
+          customerName: customerName.trim(),
+          originalAmount: debtAmount,
+          remainingAmount: debtAmount,
+          status: checkoutPaidAmount > 0 ? 'partial' : 'unpaid',
+          createdAt: new Date(),
+          settledAt: null,
+        });
+      }
+
+      const itemRecord: TransactionItemRecord = {
+        transactionId: txId as number,
+        productId: 0,
+        productName: `Bagi Rata (Bagian ${splitPartCheckoutIndex + 1}/${numSplits})`,
+        quantity: 1,
+        price: activeCheckoutTotal,
+        hpp: 0,
+        discountType: null,
+        discountValue: 0,
+        discountAmount: 0,
+        subtotal: activeCheckoutTotal,
+        notes: `Total tagihan asli: ${rp(total)}`,
+      };
+      await db.transactionItems.add(itemRecord);
+
+      toast.success(t('cashier.toast.transactionSuccess', { receiptNumber }));
+      trackEvent('create_transaction');
+      setLastTransaction({ ...txData, id: txId as number });
+      setLastTxItems([itemRecord]);
+      
+      const newPaidSplits = [...paidSplits];
+      newPaidSplits[splitPartCheckoutIndex] = true;
+      setPaidSplits(newPaidSplits);
+      setSplitPartCheckoutIndex(null);
+      setCheckoutOpen(false);
+
+      const allPaid = newPaidSplits.every(Boolean);
+      if (allPaid) {
+        doFullReset();
+        setSplitBillOpen(false);
+        toast.success("Seluruh bagian tagihan split bill telah lunas dibayar!");
+      } else {
+        setSplitBillOpen(true);
+      }
+      setReceiptOpen(true);
+      return;
+    }
+
+    if (splitCart !== null) {
+      // 2. Per Item Mode: Save the split items
+      const receiptNumber = `TX-ITEM-${Date.now()}`;
+      const splitProfit = splitCart.reduce((sum, item) => sum + (item.product.price - item.product.hpp) * item.qty, 0) - splitCart.reduce((sum, item) => sum + getItemDiscountAmount(item), 0);
+      
+      const txData: Transaction = {
+        subtotal: activeCheckoutTotal,
+        discountType: null,
+        discountValue: 0,
+        discountAmount: 0,
+        total: activeCheckoutTotal,
+        paymentMethodId: checkoutPaidAmount > 0 ? Number(paymentMethodId) : 0,
+        paymentAmount: checkoutPaidAmount,
+        change,
+        profit: splitProfit,
+        date: new Date(),
+        receiptNumber,
+        status: 'completed',
+        customerId,
+        customerName: (customerName.trim() ? `${customerName.trim()} (Split Item)` : `Split Item`),
+        tableNumber: tableNumber.trim() || undefined,
+        remarks: `Split Bill Per Item - ${remarks.trim()}`.trim(),
+        createdBy: currentUser?.id,
+        debtAmount,
+      };
+
+      const txId = await db.transactions.add(txData);
+
+      if (debtAmount > 0) {
+        await db.debts.add({
+          transactionId: txId as number,
+          customerId: customerId!,
+          customerName: customerName.trim(),
+          originalAmount: debtAmount,
+          remainingAmount: debtAmount,
+          status: checkoutPaidAmount > 0 ? 'partial' : 'unpaid',
+          createdAt: new Date(),
+          settledAt: null,
+        });
+      }
+
+      const itemRecords: TransactionItemRecord[] = splitCart.map(c => ({
+        transactionId: txId as number,
+        productId: c.product.id!,
+        productName: c.product.name,
+        quantity: c.qty,
+        price: c.product.price,
+        hpp: c.product.hpp,
+        discountType: c.discountType,
+        discountValue: c.discountValue,
+        discountAmount: getItemDiscountAmount(c),
+        subtotal: getItemSubtotal(c),
+        notes: c.notes,
+      }));
+      await db.transactionItems.bulkAdd(itemRecords);
+
+      for (const item of splitCart) {
+        if (!isStockManaged(item.product)) continue;
+        await db.products.update(item.product.id!, { stock: item.product.stock - item.qty, updatedAt: new Date() });
+      }
+
+      toast.success(t('cashier.toast.transactionSuccess', { receiptNumber }));
+      trackEvent('create_transaction');
+      setLastTransaction({ ...txData, id: txId as number });
+      setLastTxItems(itemRecords);
+      
+      // Update main cart: subtract split items
+      const newCart = cart.map(c => {
+        const splitItem = splitCart.find(sc => sc.product.id === c.product.id);
+        if (splitItem) {
+          return { ...c, qty: c.qty - splitItem.qty };
+        }
+        return c;
+      }).filter(c => c.qty > 0);
+      
+      setCart(newCart);
+      setSplitCart(null);
+      setCheckoutOpen(false);
+
+      if (newCart.length === 0) {
+        doFullReset();
+        setSplitBillOpen(false);
+        toast.success("Seluruh item tagihan telah lunas dibayar!");
+      } else {
+        // Re-initialize split item quantities to 0 for remaining cart
+        const initialQtys: Record<number, number> = {};
+        newCart.forEach((item, index) => {
+          initialQtys[index] = 0;
+        });
+        setSplitItemQtys(initialQtys);
+        setSplitBillOpen(true);
+      }
+      setReceiptOpen(true);
       return;
     }
 
@@ -1056,11 +1287,24 @@ export default function Kasir() {
                 <Button
                   className="flex-1 h-12 text-sm font-semibold"
                   onClick={openCheckout}
+                  disabled={cart.length === 0}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
                   {t('cashier.buttons.pay')}
                 </Button>
               </div>
+
+              <ProGate featureKey="split_bill">
+                <Button
+                  variant="outline"
+                  className="w-full h-10 text-xs"
+                  onClick={handleOpenSplitBill}
+                  disabled={cart.length === 0}
+                >
+                  <ListPlus className="w-3.5 h-3.5 mr-1.5" />
+                  Bagi Tagihan (Split Bill)
+                </Button>
+              </ProGate>
 
               {editingTxId && can('delete_transaction') && (
                 <Button
@@ -1275,11 +1519,24 @@ export default function Kasir() {
                 <Button
                   className="flex-1 h-12 text-sm font-semibold"
                   onClick={openCheckout}
+                  disabled={cart.length === 0}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
                   {t('cashier.buttons.pay')}
                 </Button>
               </div>
+
+              <ProGate featureKey="split_bill">
+                <Button
+                  variant="outline"
+                  className="w-full h-10 text-xs mt-2"
+                  onClick={handleOpenSplitBill}
+                  disabled={cart.length === 0}
+                >
+                  <ListPlus className="w-3.5 h-3.5 mr-1.5" />
+                  Bagi Tagihan (Split Bill)
+                </Button>
+              </ProGate>
 
               {editingTxId && can('delete_transaction') && (
                 <Button
@@ -1353,6 +1610,216 @@ export default function Kasir() {
         </SheetContent>
       </Sheet>
 
+      {/* Dialog Split Bill */}
+      <Dialog open={splitBillOpen} onOpenChange={setSplitBillOpen}>
+        <DialogContent className="max-w-[95vw] md:max-w-lg rounded-xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2 shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <ListPlus className="w-5 h-5 text-primary" />
+              Bagi Tagihan (Split Bill)
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto p-6 pt-0 space-y-4">
+            {/* Tab Selector */}
+            <div className="grid grid-cols-2 p-1 bg-muted rounded-lg shrink-0">
+              <button
+                type="button"
+                onClick={() => setSplitMode('equal')}
+                className={cn(
+                  "py-2 text-xs font-semibold rounded-md transition-all",
+                  splitMode === 'equal'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Bagi Rata (Equal Split)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSplitMode('item')}
+                className={cn(
+                  "py-2 text-xs font-semibold rounded-md transition-all",
+                  splitMode === 'item'
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Per Item (Item Split)
+              </button>
+            </div>
+
+            {splitMode === 'equal' ? (
+              <div className="space-y-4">
+                <div className="bg-primary/5 p-4 rounded-xl space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Total Tagihan Asli</span>
+                    <span className="text-sm font-bold">{rp(total)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center border-t border-primary/10 pt-3">
+                    <span className="text-xs text-muted-foreground">Jumlah Pembagian</span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8 rounded-lg"
+                        disabled={numSplits <= 2}
+                        onClick={() => setNumSplits(prev => Math.max(2, prev - 1))}
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </Button>
+                      <span className="text-sm font-bold w-6 text-center">{numSplits}</span>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="h-8 w-8 rounded-lg"
+                        disabled={numSplits >= 10}
+                        onClick={() => setNumSplits(prev => Math.min(10, prev + 1))}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center border-t border-primary/10 pt-3">
+                    <span className="text-xs text-muted-foreground font-semibold">Per Bagian</span>
+                    <span className="text-base font-extrabold text-primary">
+                      {rp(Math.round(total / numSplits))}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Daftar Bagian Tagihan</p>
+                  <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                    {paidSplits.map((isPaid, idx) => (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "flex items-center justify-between p-3 border rounded-xl transition-all",
+                          isPaid 
+                            ? "bg-success/5 border-success/20 text-success-foreground" 
+                            : "bg-background border-border text-foreground"
+                        )}
+                      >
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold">Bagian {idx + 1} dari {numSplits}</p>
+                          <p className="text-xs text-muted-foreground">{rp(Math.round(total / numSplits))}</p>
+                        </div>
+                        
+                        {isPaid ? (
+                          <div className="flex items-center gap-1.5 text-xs text-success font-semibold px-2.5 py-1 bg-success/10 rounded-full">
+                            <Check className="w-3.5 h-3.5" />
+                            Lunas
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="h-8 text-xs font-bold"
+                            onClick={() => {
+                              setSplitPartCheckoutIndex(idx);
+                              setCheckoutOpen(true);
+                              setSplitBillOpen(false);
+                              setUseDebt(false);
+                              setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? '');
+                              setPaymentAmount(Math.round(total / numSplits).toString());
+                              setIsQuickAdding(false);
+                            }}
+                          >
+                            <CreditCard className="w-3.5 h-3.5 mr-1" />
+                            Bayar
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Per Item Mode
+              <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Pilih item dan jumlah yang ingin dipisahkan ke dalam transaksi baru.
+                </p>
+                <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
+                  {cart.map((item, index) => {
+                    const selectedQty = splitItemQtys[index] || 0;
+                    return (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-xl bg-background border-border">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-xs font-bold truncate">{item.product.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {rp(getItemBasePrice(item))} × {item.qty} item
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7 rounded-md"
+                            disabled={selectedQty <= 0}
+                            onClick={() => {
+                              setSplitItemQtys(prev => ({
+                                ...prev,
+                                [index]: Math.max(0, (prev[index] || 0) - 1)
+                              }));
+                            }}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="text-xs font-semibold w-5 text-center">{selectedQty}</span>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7 rounded-md"
+                            disabled={selectedQty >= item.qty}
+                            onClick={() => {
+                              setSplitItemQtys(prev => ({
+                                ...prev,
+                                [index]: Math.min(item.qty, (prev[index] || 0) + 1)
+                              }));
+                            }}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="border-t border-border pt-4 space-y-3">
+                  <div className="flex justify-between items-center bg-primary/5 p-3.5 rounded-xl">
+                    <span className="text-xs font-semibold">Total Tagihan Terpisah</span>
+                    <span className="text-base font-extrabold text-primary">{rp(splitCartTotal)}</span>
+                  </div>
+
+                  <Button
+                    className="w-full h-11 text-xs font-bold"
+                    disabled={currentSplitItems.length === 0}
+                    onClick={() => {
+                      setSplitCart(currentSplitItems);
+                      setSplitPartCheckoutIndex(null);
+                      setCheckoutOpen(true);
+                      setSplitBillOpen(false);
+                      setUseDebt(false);
+                      setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? '');
+                      setPaymentAmount(splitCartTotal.toString());
+                      setIsQuickAdding(false);
+                    }}
+                  >
+                    <Check className="w-4 h-4 mr-1.5" />
+                    Bayar Tagihan Terpisah ({rp(splitCartTotal)})
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Checkout Dialog */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="max-w-[95vw] md:max-w-lg rounded-xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
@@ -1362,7 +1829,7 @@ export default function Kasir() {
           <div className="flex-1 overflow-y-auto p-6 pt-0 space-y-4">
             <div className="text-center py-3 bg-primary/5 rounded-xl">
               <p className="text-sm text-muted-foreground">{t('cashier.checkout.totalLabel')}</p>
-              <p className="text-3xl font-bold text-primary">{rp(total)}</p>
+              <p className="text-3xl font-bold text-primary">{rp(activeCheckoutTotal)}</p>
             </div>
 
             {storeSettings?.allowDebt && (
@@ -1375,7 +1842,7 @@ export default function Kasir() {
                   checked={useDebt}
                   onCheckedChange={(checked) => {
                     setUseDebt(checked);
-                    setPaymentAmount(checked ? '0' : total.toString());
+                    setPaymentAmount(checked ? '0' : activeCheckoutTotal.toString());
                     setIsQuickAdding(false);
                   }}
                 />
@@ -1419,7 +1886,7 @@ export default function Kasir() {
                   </button>
                 ))}
                 <button
-                  onClick={() => { setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
+                  onClick={() => { setPaymentAmount(activeCheckoutTotal.toString()); setIsQuickAdding(false); }}
                   className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-95 transition-all"
                 >
                   {t('cashier.checkout.exactMoney')}
@@ -1470,7 +1937,7 @@ export default function Kasir() {
               </div>
             )}
 
-            {paidAmount >= total && (
+            {paidAmount >= activeCheckoutTotal && (
               <div className="flex justify-between items-center bg-success/10 p-3 rounded-xl">
                 <span className="text-sm font-medium">{t('cashier.checkout.changeLabel')}</span>
                 <span className="text-lg font-bold text-success">{rp(change)}</span>
@@ -1482,8 +1949,8 @@ export default function Kasir() {
               onClick={handleCheckout}
               disabled={
                 useDebt
-                  ? !customerId || paidAmount < 0 || paidAmount > total || (checkoutPaidAmount > 0 && !paymentMethodId)
-                  : !paymentMethodId || paidAmount < total
+                  ? !customerId || paidAmount < 0 || paidAmount > activeCheckoutTotal || (checkoutPaidAmount > 0 && !paymentMethodId)
+                  : !paymentMethodId || paidAmount < activeCheckoutTotal
               }
             >
               <Check className="w-5 h-5 mr-2" />

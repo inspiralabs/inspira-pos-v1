@@ -1,6 +1,7 @@
 import { db } from './db';
 
-const SECURE_SALT = 'INSPIRA_POS_SECURE_SALT_2026';
+const SECURE_SALT_LITE = import.meta.env.VITE_SECURE_SALT_LITE || 'INSPIRA_POS_SECURE_SALT_LITE_2026';
+const SECURE_SALT_PRO  = import.meta.env.VITE_SECURE_SALT_PRO || 'INSPIRA_POS_SECURE_SALT_PRO_2026';
 
 /**
  * Normalizes store name for deterministic hashing (lowercase, trimmed, spaces normalized).
@@ -17,12 +18,12 @@ export function normalizeDeviceId(deviceId: string): string {
 }
 
 /**
- * Generates the expected license key offline for a given store name and device ID.
+ * Generates the expected license key offline for a given device ID and tier.
  */
-export async function generateLicenseKey(storeName: string, deviceId: string): Promise<string> {
-  const normalizedStore = normalizeStoreName(storeName);
+export async function generateLicenseKey(deviceId: string, tier: 'LITE' | 'PRO'): Promise<string> {
+  const salt = tier === 'PRO' ? SECURE_SALT_PRO : SECURE_SALT_LITE;
   const normalizedDevice = normalizeDeviceId(deviceId);
-  const input = `${normalizedStore}_${normalizedDevice}_${SECURE_SALT}`;
+  const input = `${normalizedDevice}_${salt}`;
   
   const encoder = new TextEncoder();
   const data = encoder.encode(input);
@@ -38,15 +39,26 @@ export async function generateLicenseKey(storeName: string, deviceId: string): P
 }
 
 /**
- * Validates an input license key against the store name and device ID.
+ * Validates an input license key against the device ID.
  */
-export async function validateLicenseKey(storeName: string, deviceId: string, licenseKey: string): Promise<boolean> {
-  if (!storeName || !deviceId || !licenseKey) return false;
-  
-  const expectedKey = await generateLicenseKey(storeName, deviceId);
+export async function validateLicenseKey(
+  deviceId: string,
+  licenseKey: string
+): Promise<{ valid: boolean; tier: 'LITE' | 'PRO' | null }> {
+  if (!deviceId || !licenseKey) return { valid: false, tier: null };
   const sanitizedInput = licenseKey.trim().toUpperCase();
   
-  return expectedKey === sanitizedInput;
+  const liteKey = await generateLicenseKey(deviceId, 'LITE');
+  const proKey = await generateLicenseKey(deviceId, 'PRO');
+  
+  if (sanitizedInput === proKey) {
+    return { valid: true, tier: 'PRO' };
+  }
+  if (sanitizedInput === liteKey) {
+    return { valid: true, tier: 'LITE' };
+  }
+  
+  return { valid: false, tier: null };
 }
 
 /**

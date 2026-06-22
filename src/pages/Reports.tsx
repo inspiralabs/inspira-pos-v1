@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { isNativePlatform, printRawNativeBluetooth, getDailyReportESCPOSData, type DailyReportPrintData } from '@/lib/printer';
 import DailyReportReceipt from '@/components/reports/DailyReportReceipt';
 import { useTranslation } from 'react-i18next';
+import { ProGate } from '@/components/ProGate';
 
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -203,20 +204,22 @@ export default function Laporan() {
           <BarChart3 className="w-5 h-5 text-primary" />
           {t('title')}
         </h1>
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="h-9 gap-1.5" 
-          onClick={() => {
-            if (storeSettings?.licenseStatus !== 'ACTIVE') {
-              toast.error("Fitur Dinonaktifkan: Ekspor laporan PDF/Excel hanya tersedia untuk lisensi Aktif. Hubungi Admin untuk melakukan aktivasi!");
-              return;
-            }
-            setExportOpen(true);
-          }}
-        >
-          <Download className="w-4 h-4" /> {t('export')}
-        </Button>
+        <ProGate featureKey="export_pdf">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="h-9 gap-1.5" 
+            onClick={() => {
+              if (storeSettings?.licenseStatus !== 'ACTIVE') {
+                toast.error("Fitur Dinonaktifkan: Ekspor laporan PDF/Excel hanya tersedia untuk lisensi Aktif. Hubungi Admin untuk melakukan aktivasi!");
+                return;
+              }
+              setExportOpen(true);
+            }}
+          >
+            <Download className="w-4 h-4" /> {t('export')}
+          </Button>
+        </ProGate>
       </div>
 
       <ExportReportDialog
@@ -238,7 +241,11 @@ export default function Laporan() {
         <TabsList className="w-full">
           <TabsTrigger value="daily" className="flex-1">{t('tabs.daily')}</TabsTrigger>
           <TabsTrigger value="7" className="flex-1">{t('tabs.7days')}</TabsTrigger>
-          <TabsTrigger value="30" className="flex-1">{t('tabs.30days')}</TabsTrigger>
+          <div className="flex-1 flex">
+            <ProGate featureKey="report_30_days">
+              <TabsTrigger value="30" className="w-full h-full">{t('tabs.30days')}</TabsTrigger>
+            </ProGate>
+          </div>
         </TabsList>
       </Tabs>
 
@@ -342,68 +349,70 @@ export default function Laporan() {
         </Card>
       )}
 
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-1.5">
-            <DollarSign className="w-4 h-4" />
-            {t(period === 'daily' ? 'pl.daily' : 'pl.title')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <div className="flex items-center gap-2">
-              <ArrowUp className="w-3.5 h-3.5 text-success" />
-              <span>{t('pl.grossRevenue')}</span>
+      <ProGate featureKey="profit_loss_report">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4" />
+              {t(period === 'daily' ? 'pl.daily' : 'pl.title')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <div className="flex items-center gap-2">
+                <ArrowUp className="w-3.5 h-3.5 text-success" />
+                <span>{t('pl.grossRevenue')}</span>
+              </div>
+              <span className="font-semibold">{rp(totalRevenue)}</span>
             </div>
-            <span className="font-semibold">{rp(totalRevenue)}</span>
-          </div>
-          {totalDiscount > 0 && (
+            {totalDiscount > 0 && (
+              <div className="flex justify-between items-center text-sm text-destructive">
+                <div className="flex items-center gap-2">
+                  <Minus className="w-3.5 h-3.5" />
+                  <span>{t('pl.discount')}</span>
+                </div>
+                <span className="font-semibold">-{rp(totalDiscount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center text-sm border-t pt-2">
+              <span className="font-medium">{t('pl.netSales')}</span>
+              <span className="font-bold">{rp(netSales)}</span>
+            </div>
             <div className="flex justify-between items-center text-sm text-destructive">
               <div className="flex items-center gap-2">
-                <Minus className="w-3.5 h-3.5" />
-                <span>{t('pl.discount')}</span>
+                <ArrowDown className="w-3.5 h-3.5" />
+                <span>{t('pl.cogs')}</span>
               </div>
-              <span className="font-semibold">-{rp(totalDiscount)}</span>
+              <span className="font-semibold">-{rp(totalHpp)}</span>
             </div>
-          )}
-          <div className="flex justify-between items-center text-sm border-t pt-2">
-            <span className="font-medium">{t('pl.netSales')}</span>
-            <span className="font-bold">{rp(netSales)}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm text-destructive">
-            <div className="flex items-center gap-2">
-              <ArrowDown className="w-3.5 h-3.5" />
-              <span>{t('pl.cogs')}</span>
+            <div className="flex justify-between items-center text-base border-t pt-2">
+              <span className="font-bold">{t('pl.grossProfit')}</span>
+              <span className={`font-bold ${grossProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{rp(grossProfit)}</span>
             </div>
-            <span className="font-semibold">-{rp(totalHpp)}</span>
-          </div>
-          <div className="flex justify-between items-center text-base border-t pt-2">
-            <span className="font-bold">{t('pl.grossProfit')}</span>
-            <span className={`font-bold ${grossProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{rp(grossProfit)}</span>
-          </div>
-          <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>{t('pl.grossMargin')}</span>
-            <span className="font-semibold">{marginPercent.toFixed(1)}%</span>
-          </div>
-          {totalExpenses > 0 && (
-            <div className={`flex justify-between items-center text-sm ${includeExpenses ? 'text-warning' : 'text-muted-foreground'}`}>
-              <div className="flex items-center gap-2">
-                <Wallet className="w-3.5 h-3.5" />
-                <span>{t('pl.operationalExpenses')}{!includeExpenses ? t('pl.notIncluded') : ''}</span>
+            <div className="flex justify-between items-center text-xs text-muted-foreground">
+              <span>{t('pl.grossMargin')}</span>
+              <span className="font-semibold">{marginPercent.toFixed(1)}%</span>
+            </div>
+            {totalExpenses > 0 && (
+              <div className={`flex justify-between items-center text-sm ${includeExpenses ? 'text-warning' : 'text-muted-foreground'}`}>
+                <div className="flex items-center gap-2">
+                  <Wallet className="w-3.5 h-3.5" />
+                  <span>{t('pl.operationalExpenses')}{!includeExpenses ? t('pl.notIncluded') : ''}</span>
+                </div>
+                <span className="font-semibold">-{rp(totalExpenses)}</span>
               </div>
-              <span className="font-semibold">-{rp(totalExpenses)}</span>
+            )}
+            <div className="flex justify-between items-center text-base border-t pt-2">
+              <span className="font-bold">{t('pl.netProfit')}</span>
+              <span className={`font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{rp(netProfit)}</span>
             </div>
-          )}
-          <div className="flex justify-between items-center text-base border-t pt-2">
-            <span className="font-bold">{t('pl.netProfit')}</span>
-            <span className={`font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{rp(netProfit)}</span>
-          </div>
-          <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>{t('pl.netMargin')}</span>
-            <span className="font-semibold">{netMarginPercent.toFixed(1)}%</span>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex justify-between items-center text-xs text-muted-foreground">
+              <span>{t('pl.netMargin')}</span>
+              <span className="font-semibold">{netMarginPercent.toFixed(1)}%</span>
+            </div>
+          </CardContent>
+        </Card>
+      </ProGate>
 
       {topExpenseCategories.length > 0 && includeExpenses && (
         <Card className="border-0 shadow-sm">

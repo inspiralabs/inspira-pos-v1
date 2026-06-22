@@ -77,16 +77,19 @@ export default function AppLayout() {
 
         if (res.ok) {
           const data = await res.json();
-          // If the status or key has changed on the server, update the local DB
+          // If the status, key, or tier has changed on the server, update the local DB
           if (
             data.licenseStatus && 
-            (data.licenseStatus !== storeSettings.licenseStatus || data.licenseKey !== storeSettings.licenseKey)
+            (data.licenseStatus !== storeSettings.licenseStatus || 
+             data.licenseKey !== storeSettings.licenseKey ||
+             data.planTier !== storeSettings.planTier)
           ) {
             await db.storeSettings.update(storeSettings.id!, {
               licenseStatus: data.licenseStatus,
               licenseKey: data.licenseKey || null,
+              planTier: data.planTier || 'LITE',
             });
-            console.log(`License status synced: ${data.licenseStatus}`);
+            console.log(`License status synced: ${data.licenseStatus}, tier: ${data.planTier}`);
           }
         }
       } catch (err) {

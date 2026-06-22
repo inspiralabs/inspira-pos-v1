@@ -21,13 +21,14 @@ export default function LicenseBlockScreen({ storeSettings }: LicenseBlockScreen
     if (!licenseKey.trim()) return;
     setActivating(true);
     try {
-      const isValid = await validateLicenseKey(storeSettings.storeName, storeSettings.deviceId, licenseKey.trim());
-      if (isValid) {
+      const result = await validateLicenseKey(storeSettings.deviceId, licenseKey.trim());
+      if (result.valid && result.tier) {
         await db.storeSettings.update(storeSettings.id!, {
           licenseStatus: 'ACTIVE',
           licenseKey: licenseKey.trim(),
+          planTier: result.tier,
         });
-        toast.success('Aplikasi Kasir berhasil diaktifkan secara permanen!');
+        toast.success(`Aplikasi Kasir (${result.tier === 'PRO' ? 'Offline Pro' : 'Offline Lite'}) berhasil diaktifkan secara permanen!`);
       } else {
         toast.error('Kode Aktivasi tidak valid. Periksa kembali nama toko atau kode Anda.');
       }
