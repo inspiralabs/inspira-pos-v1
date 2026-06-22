@@ -32,8 +32,41 @@ export default function AppLayout() {
 
     const syncLicenseStatus = async () => {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      // Jika data toko belum terdaftar/tersinkron ke backend (misal onboarding diselesaikan saat offline),
+      // maka coba daftarkan ulang terlebih dahulu agar deviceId terikat dengan benar ke database pusat.
+      if (!storeSettings.isSyncedWithServer) {
+        try {
+          console.log('Mencoba mendaftarkan ulang toko ke server pusat...');
+          const registerRes = await fetch(`${API_BASE_URL}/api/clients/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              storeName: storeSettings.storeName,
+              address: storeSettings.address,
+              phone: storeSettings.phone,
+              deviceId: storeSettings.deviceId,
+            }),
+          });
+          if (registerRes.ok) {
+            await db.storeSettings.update(storeSettings.id!, { isSyncedWithServer: true });
+            console.log('Pendaftaran ulang ke server pusat sukses.');
+          } else {
+            console.warn('Gagal melakukan pendaftaran ulang ke server pusat (offline/error server).');
+            return; // Batalkan sync lisensi, coba lagi di interval berikutnya
+          }
+        } catch (err) {
+          console.warn('Gagal terhubung ke database pusat untuk pendaftaran ulang (offline mode):', err);
+          return; // Tunda pengecekan status lisensi karena jaringan offline
+        }
+      }
+
+      // Pengecekan status lisensi ke server admin pusat
       try {
         const res = await fetch(`${API_BASE_URL}/api/clients/license-status?deviceId=${encodeURIComponent(storeSettings.deviceId)}`);
+        
+        // Toko hanya diblokir (REVOKED) jika sebelumnya pernah berhasil tersinkronisasi,
+        // namun kemudian dihapus di panel admin (Supabase mengembalikan 404).
         if (res.status === 404) {
           console.warn('Toko ini tidak ditemukan di server (kemungkinan dihapus). Menandai sebagai REVOKED...');
           await db.storeSettings.update(storeSettings.id!, {
@@ -67,7 +100,7 @@ export default function AppLayout() {
     // Check every 5 minutes in background
     const interval = setInterval(syncLicenseStatus, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [storeSettings?.deviceId, storeSettings?.licenseStatus, storeSettings?.licenseKey, storeSettings?.id]);
+  }, [storeSettings?.deviceId, storeSettings?.licenseStatus, storeSettings?.licenseKey, storeSettings?.id, storeSettings?.isSyncedWithServer]);
 
   // Loading state
   if (storeSettings === undefined || loading) return null;
@@ -89,8 +122,8 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-lg md:max-w-6xl mx-auto relative">
-      <main className="pb-20">
+    <div className="min-h-[100dvh] bg-background max-w-lg md:max-w-6xl mx-auto relative flex flex-col justify-between">
+      <main className="flex-1 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
         <Outlet />
       </main>
       <BottomNav />

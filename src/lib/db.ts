@@ -290,9 +290,10 @@ export interface StoreSettings {
   cloudStoreId?: string | null; // cloud store ID yang di-bind ke device ini untuk sync
   
   // SPRINT 2: License / trial settings
-  licenseStatus?: 'TRIAL' | 'ACTIVE' | 'EXPIRED';
+  licenseStatus?: 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'REVOKED';
   trialStartedAt?: Date | null;
   licenseKey?: string | null;
+  isSyncedWithServer?: boolean;
 }
 
 // === Database ===

@@ -365,6 +365,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           trialStartedAt,
           licenseKey: null,
           deviceId,
+          isSyncedWithServer: false,
         });
       } else {
         await db.storeSettings.add({
@@ -379,6 +380,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           trialStartedAt,
           licenseKey: null,
           deviceId,
+          isSyncedWithServer: false,
         });
       }
 
@@ -400,7 +402,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           }),
         });
         if (res.ok) {
-          toast.success('Pendaftaran toko ke database pusat berhasil!');
+          toast.success('Pendaftaran toko berhasil!');
+          const current = await db.storeSettings.toCollection().first();
+          if (current?.id) {
+            await db.storeSettings.update(current.id, { isSyncedWithServer: true });
+          }
         } else {
           const errData = await res.json().catch(() => ({}));
           console.warn('Pendaftaran pusat gagal:', errData.error || 'Server error');

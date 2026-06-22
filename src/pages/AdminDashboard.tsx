@@ -15,7 +15,7 @@ interface Client {
   address: string | null;
   phone: string | null;
   device_id: string;
-  license_status: 'TRIAL' | 'ACTIVE' | 'EXPIRED';
+  license_status: 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'REVOKED';
   trial_started_at: string;
   license_key: string | null;
   created_at: string;
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
   const [adminsList, setAdminsList] = useState<Admin[]>([]);
   const [activeTab, setActiveTab] = useState<'clients' | 'admins'>('clients');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'ALL' | 'TRIAL' | 'ACTIVE' | 'EXPIRED'>('ALL');
+  const [filterStatus, setFilterStatus] = useState<'ALL' | 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'REVOKED'>('ALL');
   const [loading, setLoading] = useState(false);
 
   // License result modal
@@ -51,6 +51,8 @@ export default function AdminDashboard() {
   const [pendingClientId, setPendingClientId] = useState<string | null>(null);
   const [delConfirmOpen, setDelConfirmOpen] = useState(false);
   const [pendingAdminId, setPendingAdminId] = useState<string | null>(null);
+  const [delClientConfirmOpen, setDelClientConfirmOpen] = useState(false);
+  const [pendingDeleteClientId, setPendingDeleteClientId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const [isAdminDarkMode, setIsAdminDarkMode] = useState(() => {
@@ -258,6 +260,60 @@ export default function AdminDashboard() {
     }
   };
 
+  // Trigger Delete Client confirmation modal
+  const triggerDeleteClient = (id: string) => {
+    setPendingDeleteClientId(id);
+    setDelClientConfirmOpen(true);
+  };
+
+  // Delete Client
+  const handleDeleteClient = async () => {
+    if (!token || !pendingDeleteClientId) return;
+    const id = pendingDeleteClientId;
+    setDelClientConfirmOpen(false);
+    setPendingDeleteClientId(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/clients/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Gagal menghapus klien.');
+        return;
+      }
+      toast.success('Toko berhasil dihapus secara permanen.');
+      fetchClients();
+    } catch {
+      toast.error('Terjadi kesalahan jaringan.');
+    }
+  };
+
+  // Deactivate Client (soft delete / non-aktifkan)
+  const handleDeactivateClient = async () => {
+    if (!token || !pendingDeleteClientId) return;
+    const id = pendingDeleteClientId;
+    setDelClientConfirmOpen(false);
+    setPendingDeleteClientId(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/clients/${id}/deactivate`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Gagal menonaktifkan klien.');
+        return;
+      }
+      toast.success('Toko berhasil dinonaktifkan.');
+      fetchClients();
+    } catch {
+      toast.error('Terjadi kesalahan jaringan.');
+    }
+  };
+
   // Fetch data on login
   useEffect(() => {
     if (token) {
@@ -268,11 +324,12 @@ export default function AdminDashboard() {
 
   // Compute stats
   const stats = useMemo(() => {
-    if (!clients) return { trial: 0, active: 0, expired: 0 };
+    if (!clients) return { trial: 0, active: 0, expired: 0, revoked: 0 };
     return {
       trial: clients.filter(c => c.license_status === 'TRIAL').length,
       active: clients.filter(c => c.license_status === 'ACTIVE').length,
       expired: clients.filter(c => c.license_status === 'EXPIRED').length,
+      revoked: clients.filter(c => c.license_status === 'REVOKED').length,
     };
   }, [clients]);
 
@@ -313,7 +370,7 @@ export default function AdminDashboard() {
             <CardContent className="p-6">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 text-left block">Username Admin</Label>
+                  <Label htmlFor="username" className="text-slate-700 dark:text-slate-300 text-left block">Username</Label>
                   <Input
                     id="username"
                     value={username}
@@ -377,7 +434,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card className="border border-slate-200 dark:border-0 bg-white dark:bg-slate-900/50 shadow-md">
             <CardContent className="p-4">
               <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Klien Trial</p>
@@ -394,6 +451,12 @@ export default function AdminDashboard() {
             <CardContent className="p-4">
               <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Lisensi Habis</p>
               <p className="text-2xl font-bold text-rose-500 mt-1">{stats.expired}</p>
+            </CardContent>
+          </Card>
+          <Card className="border border-slate-200 dark:border-0 bg-white dark:bg-slate-900/50 shadow-md">
+            <CardContent className="p-4">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Non-aktif</p>
+              <p className="text-2xl font-bold text-slate-500 mt-1">{stats.revoked}</p>
             </CardContent>
           </Card>
         </div>
@@ -428,8 +491,8 @@ export default function AdminDashboard() {
                   className="pl-9 h-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-amber-500 focus:ring-amber-500"
                 />
               </div>
-              <div className="flex gap-2">
-                {(['ALL', 'TRIAL', 'ACTIVE', 'EXPIRED'] as const).map(st => (
+              <div className="flex flex-wrap gap-1.5 md:gap-2">
+                {(['ALL', 'TRIAL', 'ACTIVE', 'EXPIRED', 'REVOKED'] as const).map(st => (
                   <Button
                     key={st}
                     onClick={() => setFilterStatus(st)}
@@ -437,7 +500,7 @@ export default function AdminDashboard() {
                     variant={filterStatus === st ? 'default' : 'outline'}
                     className={`h-10 text-xs px-3 font-semibold ${filterStatus === st ? 'bg-amber-500 text-black hover:bg-amber-600' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
                   >
-                    {st === 'ALL' ? 'Semua' : st === 'TRIAL' ? 'Trial' : st === 'ACTIVE' ? 'Aktif' : 'Habis'}
+                    {st === 'ALL' ? 'Semua' : st === 'TRIAL' ? 'Trial' : st === 'ACTIVE' ? 'Aktif' : st === 'EXPIRED' ? 'Habis' : 'Non-aktif'}
                   </Button>
                 ))}
               </div>
@@ -481,12 +544,14 @@ export default function AdminDashboard() {
                                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                                   : c.license_status === 'EXPIRED'
                                   ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                                  : c.license_status === 'REVOKED'
+                                  ? 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/30'
                                   : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30'
                               }`}>
                                 {c.license_status}
                               </span>
                             </td>
-                            <td className="p-3 text-right">
+                            <td className="p-3 text-right flex items-center justify-end gap-1.5">
                               {c.license_status !== 'ACTIVE' ? (
                                 <Button
                                   size="sm"
@@ -500,6 +565,15 @@ export default function AdminDashboard() {
                                   {c.license_key}
                                 </span>
                               )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => triggerDeleteClient(c.id)}
+                                className="h-8 w-8 text-rose-500 hover:bg-rose-500/10 hover:text-rose-400 shrink-0"
+                                title="Hapus Toko"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
                             </td>
                           </tr>
                         );
@@ -688,6 +762,68 @@ export default function AdminDashboard() {
               </Button>
               <Button onClick={handleDeleteAdmin} className="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-bold">
                 Ya, Hapus
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Client Confirmation Modal */}
+      <Dialog open={delClientConfirmOpen} onOpenChange={setDelClientConfirmOpen}>
+        <DialogContent className="max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+              <ShieldAlert className="w-5 h-5 text-amber-500" /> Kelola Status &amp; Penghapusan Toko
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-3 text-left">
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+              Silakan pilih tindakan untuk toko ini. Anda dapat menonaktifkan lisensi sementara (data tidak hilang) atau menghapus seluruh data secara permanen.
+            </p>
+            
+            <div className="space-y-3 pt-2">
+              {/* Opsi 1: Non-aktifkan */}
+              <button 
+                type="button"
+                onClick={handleDeactivateClient}
+                className="w-full p-4 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 active:bg-amber-500/15 cursor-pointer text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 p-1.5 rounded-lg bg-amber-500/10 text-amber-500 shrink-0">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">Non-aktifkan Toko (Soft Delete)</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+                      Mengunci akses kasir klien secara instan, namun data toko dan histori lisensi tetap tersimpan utuh di database pusat.
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Opsi 2: Hapus Permanen */}
+              <button 
+                type="button"
+                onClick={handleDeleteClient}
+                className="w-full p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 active:bg-rose-500/15 cursor-pointer text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose-500/40"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 p-1.5 rounded-lg bg-rose-500/10 text-rose-500 shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-rose-600 dark:text-rose-400">Hapus Toko Permanen</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+                      Menghapus seluruh data toko beserta log lisensi dari server selamanya. Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button type="button" variant="outline" onClick={() => setDelClientConfirmOpen(false)} className="w-full h-11 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                Batal
               </Button>
             </div>
           </div>

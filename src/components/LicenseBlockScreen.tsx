@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { db, type StoreSettings } from '@/lib/db';
+import { db, type StoreSettings, seedDefaultData } from '@/lib/db';
 import { validateLicenseKey } from '@/lib/license';
 import { toast } from 'sonner';
 
@@ -42,7 +42,7 @@ export default function LicenseBlockScreen({ storeSettings }: LicenseBlockScreen
     const waNumber = '6282124533265'; // Inspira Labs WhatsApp
     const message = encodeURIComponent(
       isRevoked
-        ? `Halo Admin Inspira POS, toko saya tidak ditemukan atau dinonaktifkan di panel admin.\n` +
+        ? `Halo Admin Inspira POS, toko saya tidak ditemukan atau dinonaktifkan oleh admin.\n` +
           `- Nama Toko: ${storeSettings.storeName}\n` +
           `- Device ID: ${storeSettings.deviceId}\n` +
           `Mohon bantuannya untuk memeriksa dan mengaktifkan kembali.`
@@ -60,12 +60,13 @@ export default function LicenseBlockScreen({ storeSettings }: LicenseBlockScreen
     );
     if (confirmed) {
       await db.storeSettings.clear();
+      await seedDefaultData();
       toast.success('Pengaturan toko berhasil di-reset. Silakan daftarkan toko baru.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center items-center px-4 py-8">
+    <div className="min-h-[100dvh] bg-background flex flex-col justify-center items-center px-4 py-8">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-sm ${
@@ -78,7 +79,7 @@ export default function LicenseBlockScreen({ storeSettings }: LicenseBlockScreen
           </h1>
           <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
             {isRevoked 
-              ? 'Toko Anda telah dinonaktifkan atau dihapus dari Panel Admin Pusat. Silakan hubungi Administrator untuk memulihkan akses, atau lakukan reset untuk mendaftarkan toko baru.'
+              ? 'Toko Anda telah dinonaktifkan atau dihapus oleh admin. Silakan hubungi Administrator untuk memulihkan akses, atau lakukan reset untuk mendaftarkan toko baru.'
               : 'Akses aplikasi kasir Anda telah dikunci karena masa uji coba offline gratis 14 hari sudah berakhir.'}
           </p>
         </div>

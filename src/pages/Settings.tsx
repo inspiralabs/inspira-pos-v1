@@ -323,7 +323,7 @@ export default function Pengaturan() {
     <div className="px-4 pt-6 pb-4 space-y-5">
       <h1 className="text-xl font-bold flex items-center gap-2">
         <Settings className="w-5 h-5 text-primary" />
-        {t('common:setting')}
+        {t('common:common.setting')}
       </h1>
 
       {/* Store Info */}
@@ -759,7 +759,12 @@ export default function Pengaturan() {
         <CardContent className="p-4 text-center space-y-2">
            <p className="text-sm font-bold">INSPIRA POS</p>
            <p className="text-xs text-muted-foreground">Smart POS untuk UMKM Indonesia 🇮🇩</p>
-           <p className="text-[10px] text-muted-foreground">v{APP_VERSION} • Data tersimpan di perangkat</p>
+            <p className="text-[10px] text-muted-foreground">
+              Powered by{' '}
+              <a href="https://inspiralabs.id/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                InspiraLabs - Nawa Inspira Digital
+              </a>
+            </p>
 
            {storageUsage && (
              <div className="pt-2 border-t">
@@ -843,7 +848,7 @@ export default function Pengaturan() {
             )}
           </div>
           <Button className="w-full mt-2" variant="outline" onClick={() => setInstallHelpOpen(false)}>
-            {t('common:close')}
+            {t('common:common.close')}
           </Button>
         </DialogContent>
       </Dialog>
@@ -903,7 +908,7 @@ export default function Pengaturan() {
             <div className="space-y-1.5"><Label>{t('storeDialog.storeName')}</Label><Input value={storeName} onChange={e => setStoreName(e.target.value)} className="h-11" /></div>
             <div className="space-y-1.5"><Label>{t('storeDialog.address')}</Label><Input value={storeAddr} onChange={e => setStoreAddr(e.target.value)} className="h-11" /></div>
             <div className="space-y-1.5"><Label>{t('storeDialog.phone')}</Label><Input value={storePhone} onChange={e => setStorePhone(e.target.value)} className="h-11" type="tel" /></div>
-            <Button className="w-full h-11" onClick={saveStore}>{t('common:save')}</Button>
+            <Button className="w-full h-11" onClick={saveStore}>{t('common:common.save')}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1059,7 +1064,7 @@ export default function Pengaturan() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDisableMultiUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {t('employees.disableDialog.confirm')}
             </AlertDialogAction>
@@ -1077,7 +1082,7 @@ export default function Pengaturan() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {t('employees.logoutDialog.confirm')}
             </AlertDialogAction>

@@ -194,6 +194,23 @@ function GroupCard({ group, expanded, onToggle, onDelete, rp }: GroupCardProps) 
   const [newOptPrice, setNewOptPrice] = useState('');
   const [deleteOptId, setDeleteOptId] = useState<number | null>(null);
 
+  // Group Editing state
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [editGroupName, setEditGroupName] = useState(group.name);
+  const [editGroupRequired, setEditGroupRequired] = useState(group.isRequired === 1);
+  const [editGroupMulti, setEditGroupMulti] = useState(group.isMultiSelect === 1);
+
+  const handleUpdateGroup = async () => {
+    if (!editGroupName.trim()) return;
+    await db.productOptionGroups.update(group.id!, {
+      name: editGroupName.trim(),
+      isRequired: editGroupRequired ? 1 : 0,
+      isMultiSelect: editGroupMulti ? 1 : 0,
+    });
+    setIsEditingGroup(false);
+    toast.success('Grup sub-menu diperbarui');
+  };
+
   const handleAddOption = async () => {
     if (!newOptName.trim()) return;
     const maxOrder = options?.length ? Math.max(...options.map(o => o.sortOrder)) + 1 : 0;
@@ -220,20 +237,55 @@ function GroupCard({ group, expanded, onToggle, onDelete, rp }: GroupCardProps) 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
       {/* Group header */}
-      <div className="flex items-center gap-2 p-3 bg-muted/40 cursor-pointer" onClick={onToggle}>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold truncate">{group.name}</p>
-            {group.isRequired === 1 && <Badge variant="destructive" className="text-[9px] h-4 px-1">Wajib</Badge>}
-            {group.isMultiSelect === 1 && <Badge variant="outline" className="text-[9px] h-4 px-1">Multi</Badge>}
+      {isEditingGroup ? (
+        <div className="p-3 bg-muted/40 space-y-3 border-b border-border" onClick={e => e.stopPropagation()}>
+          <div className="space-y-1">
+            <Label className="text-xs">Nama Grup *</Label>
+            <Input 
+              value={editGroupName} 
+              onChange={e => setEditGroupName(e.target.value)} 
+              className="h-9 text-sm"
+              onKeyDown={e => e.key === 'Enter' && handleUpdateGroup()}
+            />
           </div>
-          <p className="text-[10px] text-muted-foreground">{options?.length ?? 0} opsi</p>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch checked={editGroupRequired} onCheckedChange={setEditGroupRequired} />
+              <span className="text-xs">Wajib dipilih</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Switch checked={editGroupMulti} onCheckedChange={setEditGroupMulti} />
+              <span className="text-xs">Bisa pilih banyak</span>
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" className="h-8 text-xs font-semibold" onClick={handleUpdateGroup} disabled={!editGroupName.trim()}>
+              Simpan
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setIsEditingGroup(false); setEditGroupName(group.name); setEditGroupRequired(group.isRequired === 1); setEditGroupMulti(group.isMultiSelect === 1); }}>
+              Batal
+            </Button>
+          </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={e => { e.stopPropagation(); onDelete(); }}>
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
-        {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
-      </div>
+      ) : (
+        <div className="flex items-center gap-2 p-3 bg-muted/40 cursor-pointer" onClick={onToggle}>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold truncate">{group.name}</p>
+              {group.isRequired === 1 && <Badge variant="destructive" className="text-[9px] h-4 px-1">Wajib</Badge>}
+              {group.isMultiSelect === 1 && <Badge variant="outline" className="text-[9px] h-4 px-1">Multi</Badge>}
+            </div>
+            <p className="text-[10px] text-muted-foreground">{options?.length ?? 0} opsi</p>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0" onClick={e => { e.stopPropagation(); setIsEditingGroup(true); }}>
+            <Edit2 className="w-3.5 h-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive shrink-0" onClick={e => { e.stopPropagation(); onDelete(); }}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+          {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+        </div>
+      )}
 
       {/* Options list */}
       {expanded && (

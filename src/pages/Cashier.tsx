@@ -763,8 +763,8 @@ export default function Kasir() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-4 h-[calc(100vh-4rem)]">
-      <div className="flex flex-col md:flex-row gap-0 md:gap-4 h-full">
+    <div className="px-4 pt-6 pb-4 h-[calc(100dvh-4rem)]">
+      <div className="flex flex-col landscape:flex-row md:flex-row gap-2 landscape:gap-4 md:gap-4 h-full">
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
           {/* Header */}
       <div className="flex items-center justify-between mb-4 pt-1">
@@ -865,7 +865,7 @@ export default function Kasir() {
       </div>
 
       {/* Desktop Cart Panel */}
-      <div className="hidden md:flex md:w-80 lg:w-96 flex-col overflow-hidden bg-card rounded-xl border border-border shrink-0">
+      <div className="hidden landscape:flex md:flex landscape:w-72 md:w-80 lg:w-96 flex-col overflow-hidden bg-card rounded-xl border border-border shrink-0">
         <div className="p-4 border-b border-border shrink-0">
           <h3 className="text-base font-bold flex items-center gap-2">
             <ShoppingCart className="w-4 h-4 text-primary" />
@@ -1082,7 +1082,7 @@ export default function Kasir() {
       {cartCount > 0 && (
         <button
           onClick={() => setCartOpen(true)}
-          className="md:hidden fixed right-4 flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-full shadow-xl active:scale-95 transition-transform z-40"
+          className="md:hidden landscape:hidden fixed right-4 flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-full shadow-xl active:scale-95 transition-transform z-40"
           style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <ShoppingCart className="w-5 h-5" />
@@ -1092,7 +1092,7 @@ export default function Kasir() {
       )}
 
       {/* Cart Sheet (mobile only) */}
-      <div className="md:hidden">
+      <div className="md:hidden landscape:hidden">
       <Sheet open={cartOpen} onOpenChange={(open) => { setCartOpen(open); if (!open) setEditingItemNotes(null); }}>
         <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl max-w-lg mx-auto">
           <SheetHeader>
