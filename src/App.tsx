@@ -277,7 +277,11 @@ const App = () => {
                   path="/"
                   element={
                     <ErrorBoundary>
-                      <LandingPage />
+                      {window.location.hostname.toLowerCase() === "admindash.inspirapos.biz.id" ? (
+                        <AdminDashboard />
+                      ) : (
+                        <LandingPage />
+                      )}
                     </ErrorBoundary>
                   }
                 />

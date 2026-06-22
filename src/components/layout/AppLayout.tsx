@@ -12,6 +12,7 @@ import LicenseBlockScreen from '@/components/LicenseBlockScreen';
 import { getLicenseStatus } from '@/lib/license';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 export default function AppLayout() {
   const {} = useTranslation();
@@ -33,6 +34,13 @@ export default function AppLayout() {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       try {
         const res = await fetch(`${API_BASE_URL}/api/clients/license-status?deviceId=${encodeURIComponent(storeSettings.deviceId)}`);
+        if (res.status === 404) {
+          console.warn('Toko ini tidak ditemukan di server (kemungkinan dihapus). Mereset pengaturan toko...');
+          await db.storeSettings.clear();
+          toast.error('Toko Anda telah dihapus atau dinonaktifkan dari panel admin. Silakan daftarkan ulang toko Anda.');
+          return;
+        }
+
         if (res.ok) {
           const data = await res.json();
           // If the status or key has changed on the server, update the local DB

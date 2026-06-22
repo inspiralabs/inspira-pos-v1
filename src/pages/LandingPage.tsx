@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import * as Tabs from '@radix-ui/react-tabs';
 import { 
   Check, 
   Search, 
@@ -23,11 +24,28 @@ import {
 } from 'lucide-react';
 
 const ADD_ONS_DATA = [
-  { id: 1, name: "Cloud Auto-Backup & Sync", price: "Rp 29.000/bln", desc: "Sinkronisasi data otomatis ke cloud secara real-time dan aman.", category: "dashboard" },
-  { id: 2, name: "Kertas Roll Thermal (Pack)", price: "Rp 49.000/pack", desc: "Bundel kertas struk thermal berkualitas isi 10 roll (58mm/80mm).", category: "operasional" },
-  { id: 3, name: "Setup Hardware & Training Kasir", price: "Rp 199.000/sesi", desc: "Jasa instalasi perangkat keras & pelatihan karyawan kasir secara remote.", category: "operasional" },
-  { id: 4, name: "Paket Bundel Printer Bluetooth", price: "Rp 349.000/unit", desc: "Printer thermal bluetooth 58mm portable siap pakai untuk cetak struk.", category: "operasional" },
-  { id: 5, name: "Kustomisasi Cetak Struk", price: "Rp 149.000", desc: "Penyesuaian layout struk khusus dengan tambahan logo & footer kustom Anda.", category: "fitur" }
+  // UMKM Lite
+  { id: 1, name: "Role tambahan", price: "Rp 49.000/bln", desc: "Tambah hak akses khusus untuk peran staff tambahan di luar batas paket.", category: "fitur", plan: "lite" },
+  { id: 2, name: "Dashboard stok real-time", price: "Rp 99.000/bln", desc: "Pantau pergerakan inventaris dan stok barang secara langsung dari mana saja.", category: "dashboard", plan: "lite" },
+  { id: 3, name: "Food cost per menu (HPP otomatis)", price: "Rp 99.000/bln", desc: "Kalkulasi HPP otomatis per menu berdasarkan bahan baku yang digunakan.", category: "dashboard", plan: "lite" },
+  { id: 4, name: "QR Self-Order", price: "Rp 109.000/bln", desc: "Pelanggan bisa memesan dan bayar langsung di meja dengan scan kode QR.", category: "operasional", plan: "lite" },
+  { id: 5, name: "WA Broadcast promo ke pelanggan", price: "Rp 199.000/bln", desc: "Kirim pesan promosi massal secara personal ke nomor WhatsApp pelanggan Anda.", category: "fitur", plan: "lite" },
+  { id: 7, name: "KDS Dapur", price: "Rp 149.000/bln", desc: "Kitchen Display System untuk menampilkan antrean pesanan di area dapur secara digital.", category: "operasional", plan: "lite" },
+  { id: 8, name: "Loyalty program (Membership)", price: "Rp 149.000/bln", desc: "Sistem poin dan reward belanja untuk meningkatkan retensi kunjungan pelanggan.", category: "fitur", plan: "lite" },
+  { id: 9, name: "Outlet tambahan", price: "Rp 299.000/outlet/bln", desc: "Tambah cabang/outlet baru untuk dikelola dalam satu sistem terintegrasi.", category: "operasional", plan: "lite" },
+  { id: 10, name: "Dashboard keuangan (P&L, arus kas)", price: "Rp 299.000/bln", desc: "Analisis rugi laba (Profit & Loss) dan laporan arus kas bisnis secara mendalam.", category: "dashboard", plan: "lite" },
+  { id: 11, name: "Training kasir on-site (per sesi 2 jam)", price: "Hubungi Sales", desc: "Pelatihan karyawan kasir langsung di lokasi usaha Anda oleh tim ahli kami.", category: "operasional", plan: "lite" },
+  { id: 12, name: "Inter-branch transfer", price: "Rp 499.000/bln", desc: "Kirim dan mutasi stok inventaris antar cabang dengan pencatatan yang rapi.", category: "operasional", plan: "lite" },
+  { id: 13, name: "Absensi karyawan", price: "Rp 499.000/bln", desc: "Pencatatan kehadiran karyawan kasir langsung di tablet kasir.", category: "operasional", plan: "lite" },
+
+  // UMKM Pro
+  { id: 101, name: "Role tambahan", price: "Rp 109.000/bln", desc: "Tambah hak akses khusus untuk peran staff tambahan di luar batas paket.", category: "fitur", plan: "pro" },
+  { id: 103, name: "Outlet tambahan", price: "Rp 299.000/outlet/bln", desc: "Tambah cabang/outlet baru untuk dikelola dalam satu sistem terintegrasi.", category: "operasional", plan: "pro" },
+  { id: 104, name: "Ingredient Tracking BOM", price: "Rp 299.000/outlet/bln", desc: "Pelacakan stok bahan baku (Bill of Materials) yang terpotong otomatis saat terjual.", category: "operasional", plan: "pro" },
+  { id: 105, name: "Advanced analytics dashboard", price: "Rp 399.000/bln", desc: "Dashboard analisis bisnis cerdas dengan prediksi performa dan tren penjualan.", category: "dashboard", plan: "pro" },
+  { id: 106, name: "Inter-branch transfer", price: "Rp 499.000/bln", desc: "Kirim dan mutasi stok inventaris antar cabang dengan pencatatan yang rapi.", category: "operasional", plan: "pro" },
+  { id: 107, name: "Dedicated support 24/7", price: "Hubungi Sales", desc: "Dukungan bantuan teknis prioritas yang siap melayani Anda kapan saja 24 jam sehari.", category: "operasional", plan: "pro" },
+  { id: 108, name: "Custom API integration", price: "Hubungi Sales", desc: "Integrasi API kustom dengan sistem ERP, akuntansi, atau platform pihak ketiga lainnya.", category: "fitur", plan: "pro" }
 ];
 
 const FAQS_DATA = [
@@ -101,6 +119,7 @@ export default function LandingPage() {
   const [billingMode, setBillingMode] = useState<'monthly' | 'annual' | 'lifetime'>('monthly');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'fitur' | 'dashboard' | 'operasional'>('all');
+  const [addonPlan, setAddonPlan] = useState<'lite' | 'pro'>('lite');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(1); // FAQ 'Bisa tanpa internet?' dibuka secara default
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -170,12 +189,13 @@ export default function LandingPage() {
   // Filtering add-ons
   const filteredAddOns = useMemo(() => {
     return ADD_ONS_DATA.filter(addon => {
+      const matchesPlan = (addon as any).plan === addonPlan;
       const matchesSearch = addon.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             addon.desc.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || addon.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      return matchesPlan && matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [addonPlan, searchQuery, selectedCategory]);
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
@@ -726,9 +746,52 @@ export default function LandingPage() {
               Modul Tambahan (Add-ons) Fleksibel
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Hanya bayar fitur yang Anda butuhkan. Sesuaikan aplikasi POS agar pas dengan alur operasional bisnis Anda.
+              Pilih paket Anda di bawah ini untuk melihat modul tambahan yang tersedia.
             </p>
           </motion.div>
+
+          {/* Plan Selector */}
+          <Tabs.Root 
+            value={addonPlan} 
+            onValueChange={(val) => { 
+              setAddonPlan(val as 'lite' | 'pro'); 
+              setSelectedCategory('all'); 
+            }}
+            className="flex justify-center mb-8"
+          >
+            <Tabs.List className="inline-flex p-1 rounded-full bg-[#6e150f]/5 border border-[#6e150f]/10 relative">
+              <Tabs.Trigger 
+                value="lite"
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
+                  addonPlan === 'lite' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
+                }`}
+              >
+                {addonPlan === 'lite' && (
+                  <motion.div 
+                    layoutId="activeAddonPlan" 
+                    className="absolute inset-0 bg-[#6e150f] rounded-full z-0"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">Add-Ons UMKM Lite</span>
+              </Tabs.Trigger>
+              <Tabs.Trigger 
+                value="pro"
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
+                  addonPlan === 'pro' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
+                }`}
+              >
+                {addonPlan === 'pro' && (
+                  <motion.div 
+                    layoutId="activeAddonPlan" 
+                    className="absolute inset-0 bg-[#6e150f] rounded-full z-0"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">Add-Ons UMKM Pro</span>
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs.Root>
 
           {/* Search bar and Category filter tabs */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-[#6e150f]/10">
@@ -777,15 +840,14 @@ export default function LandingPage() {
 
           {/* Add-ons list grid - animated dynamically */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence>
               {filteredAddOns.length > 0 ? (
                 filteredAddOns.map((addon) => (
                   <motion.div 
-                    layout
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.15 }}
                     key={addon.id}
                     className="flex flex-col p-6 rounded-2xl bg-[#F5EFE6]/30 border border-[#6e150f]/5 hover:border-[#6e150f]/20 hover:bg-white hover:-translate-y-1 hover:shadow-md transition-all duration-300"
                   >
@@ -793,7 +855,11 @@ export default function LandingPage() {
                       <span className="text-[10px] font-extrabold text-[#d0a139] uppercase tracking-wider bg-[#d0a139]/10 px-2 py-0.5 rounded-full">
                         {addon.category}
                       </span>
-                      <span className="text-xs font-bold text-[#6e150f] bg-[#6e150f]/10 px-2.5 py-1 rounded-lg">
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                        addon.price === "Hubungi Sales" 
+                          ? 'bg-emerald-600/10 text-emerald-600' 
+                          : 'bg-[#6e150f]/10 text-[#6e150f]'
+                      }`}>
                         {addon.price}
                       </span>
                     </div>
@@ -801,6 +867,20 @@ export default function LandingPage() {
                     <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                       {addon.desc}
                     </p>
+                    {addon.price === "Hubungi Sales" && (
+                      <button
+                        onClick={() => {
+                          const waNumber = '6282124533265'; // Inspira Labs WhatsApp
+                          const message = encodeURIComponent(
+                            `Halo Admin Inspira POS, saya tertarik dan ingin bertanya lebih lanjut mengenai Add-on "${addon.name}" untuk paket UMKM ${addonPlan === 'lite' ? 'Lite' : 'Pro'}.`
+                          );
+                          window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
+                        }}
+                        className="mt-4 w-full py-2 px-4 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20BA5A] text-white transition-all flex items-center justify-center gap-1.5 shadow-sm"
+                      >
+                        Hubungi Sales via WA
+                      </button>
+                    )}
                   </motion.div>
                 ))
               ) : (
