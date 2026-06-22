@@ -5,17 +5,6 @@
       "has": [
         {
           "type": "host",
-          "value": "admindash.inspirapos.biz.id"
-        }
-      ],
-      "destination": "/admin-dashboard",
-      "permanent": false
-    },
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
           "value": "demo.inspirapos.biz.id"
         }
       ],
@@ -30,7 +19,7 @@
           "value": "inspirapos.biz.id"
         }
       ],
-      "destination": "https://admindash.inspirapos.biz.id/admin-dashboard$1",
+      "destination": "https://admindash.inspirapos.biz.id$1",
       "permanent": false
     },
     {
@@ -41,7 +30,7 @@
           "value": "inspirapos.inspiralabs.id"
         }
       ],
-      "destination": "https://admindash.inspirapos.biz.id/admin-dashboard$1",
+      "destination": "https://admindash.inspirapos.biz.id$1",
       "permanent": false
     },
     {
@@ -52,7 +41,7 @@
           "value": "demo.inspirapos.biz.id"
         }
       ],
-      "destination": "https://admindash.inspirapos.biz.id/admin-dashboard$1",
+      "destination": "https://admindash.inspirapos.biz.id$1",
       "permanent": false
     },
     {
