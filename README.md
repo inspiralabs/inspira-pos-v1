@@ -64,8 +64,8 @@ A free, offline-first, open source Point of Sale (POS) Progressive Web App built
 
 ```bash
 # Clone the repository
-git clone https://github.com/user/kasirgratisan.git
-cd kasirgratisan
+git clone https://github.com/user/inspira-pos-v1.git
+cd inspira-pos-v1
 
 # Install dependencies
 npm install
@@ -230,54 +230,6 @@ New COGS = ((Old Stock × Old COGS) + (New Qty × Buy Price)) / (Old Stock + New
 
 ---
 
-## 💬 Feedback & Feature Requests
-
-Got suggestions, feature ideas, or found a bug? Submit and vote on our board:
-
-👉 **[kasirgratisan.fider.io](https://kasirgratisan.fider.io/)**
-
----
-
-## 👥 Community
-
-Join the Telegram group to discuss the app, ask questions, and share tips with other users:
-
-👉 **[t.me/kasirgratisan](https://t.me/kasirgratisan)**
-
----
-
-## ☕ Support the Developer
-
-FreeKasir is built and maintained for free. If you find it useful, you can buy the developer a coffee to support continued development:
-
-👉 **[traktir.jipraks.com](https://traktir.jipraks.com/)**
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how:
-
-1. Fork this repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -m 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Open a Pull Request
-
-### Guidelines
-
-- UI text uses **i18next** — add new strings to `src/i18n/locales/{id,en,ms}/` JSON files inside the appropriate namespace (`common`, `settings`, `products`, `reports`, `dashboard`, `onboarding`)
-- Use `useTranslation('namespace')` hook and `t('key')` in components
-- Currency and number formatting should be locale-aware using `i18n.language` and `NUMBER_LOCALES` / `CURRENCY_SYMBOL` maps
-- Date formatting should use `date-fns` with locale from `LOCALES` map
-- Use existing `shadcn/ui` components from `src/components/ui/`
-- All monetary values are stored as numbers representing Indonesian Rupiah (no decimals)
-- Format numbers using `toLocaleString('id-ID')`
-- New features must work fully offline (no API calls)
-- Use `useLiveQuery()` from `dexie-react-hooks` for reactive data binding
-- Gate sensitive UI/actions with the `can()` helper from `useAuth()` when multi-user is enabled
-
----
 
 ## 📄 License
 
