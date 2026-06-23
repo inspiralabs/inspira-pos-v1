@@ -392,9 +392,15 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         await seedDummyData();
       }
 
-      // Sync onboarding to backend (Supabase) if online
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      // Sync onboarding to backend (Supabase) if online.
+      // VITE_API_URL must be set to the production backend URL in Vercel env vars.
+      // Fallback is intentionally empty — calling localhost in production is always wrong.
+      const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      if (!API_BASE_URL) {
+        console.warn('[Onboarding] VITE_API_URL tidak di-set. Lewati sync server.');
+      }
       try {
+        if (!API_BASE_URL) throw new Error('API_BASE_URL tidak dikonfigurasi');
         const res = await fetch(`${API_BASE_URL}/api/clients/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

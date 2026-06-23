@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Lock, Users, KeyRound, LogOut, Search, Plus, Trash2, ShieldAlert, Award, Calendar, Phone, MapPin, RefreshCw, Key, Copy, Check, Sun, Moon } from 'lucide-react';
 import { toast } from 'sonner';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 interface Client {
   id: string;

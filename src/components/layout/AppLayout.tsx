@@ -32,8 +32,12 @@ export default function AppLayout() {
     if (!storeSettings || !storeSettings.onboardingDone || !storeSettings.deviceId) return;
 
     const syncLicenseStatus = async () => {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      
+      const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+      if (!API_BASE_URL) {
+        console.warn('[AppLayout] VITE_API_URL tidak di-set. Sync lisensi dilewati.');
+        return;
+      }
+
       // Jika data toko belum terdaftar/tersinkron ke backend (misal onboarding diselesaikan saat offline),
       // maka coba daftarkan ulang terlebih dahulu agar deviceId terikat dengan benar ke database pusat.
       if (!storeSettings.isSyncedWithServer) {
@@ -107,12 +111,30 @@ export default function AppLayout() {
   }, [storeSettings?.deviceId, storeSettings?.licenseStatus, storeSettings?.licenseKey, storeSettings?.id, storeSettings?.isSyncedWithServer]);
 
   // Loading state — tampilkan spinner, bukan blank page
+  // Allow a brief window for IndexedDB to load before falling back to
+  // the localStorage signal. This avoids a flash of onboarding on slow devices.
+  const onboardingDoneSignal = localStorage.getItem('inspirapos_onboarding_done') === '1';
   if (storeSettings === undefined || loading) {
+    if (onboardingDoneSignal) {
+      // IndexedDB still loading but we know onboarding was done — show spinner, not onboarding
+      return (
+        <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+          <p className="text-sm text-muted-foreground">{t('common:common.loading')}</p>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">{t('common:common.loading')}</p>
       </div>
     );
+  }
+
+  // Mirror onboardingDone into localStorage as a durable signal.
+  // IndexedDB can be cleared by browser privacy settings (best-effort storage);
+  // localStorage is more resilient to those same settings.
+  if (storeSettings?.onboardingDone) {
+    localStorage.setItem('inspirapos_onboarding_done', '1');
   }
 
   // Show onboarding if not done yet
