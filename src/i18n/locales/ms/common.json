@@ -76,7 +76,14 @@
     "reload": "Muat semula",
     "goHome": "Ke beranda",
     "copyDetails": "Salin butiran",
-    "copyPrompt": "Salin butiran ralat berikut:"
+    "copyPrompt": "Salin butiran ralat berikut:",
+    "copySuccess": "Butiran ralat berjaya disalin",
+    "contactAdmin": "Hubungi Admin",
+    "contactAdminMessage": "Hai Admin, saya mengalami ralat di Inspira POS:",
+    "backupTitle": "Backup Data Anda",
+    "backupDescription": "Data anda masih selamat di peranti ini. Muat turun backup sebelum meneruskan.",
+    "downloadBackup": "Muat Turun Backup Sekarang",
+    "backupFailed": "Gagal membuat backup"
   },
   "notFound": {
     "title": "404",

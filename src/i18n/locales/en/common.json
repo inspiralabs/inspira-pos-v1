@@ -76,7 +76,14 @@
     "reload": "Reload",
     "goHome": "Go to Home",
     "copyDetails": "Copy details",
-    "copyPrompt": "Copy the following error details:"
+    "copyPrompt": "Copy the following error details:",
+    "copySuccess": "Error details copied",
+    "contactAdmin": "Contact Admin",
+    "contactAdminMessage": "Hi Admin, I encountered an error in Inspira POS:",
+    "backupTitle": "Backup Your Data",
+    "backupDescription": "Your data is still safe on this device. Download a backup before continuing.",
+    "downloadBackup": "Download Backup Now",
+    "backupFailed": "Failed to create backup"
   },
   "notFound": {
     "title": "404",

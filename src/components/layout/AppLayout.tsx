@@ -9,13 +9,14 @@ import Onboarding from '@/components/Onboarding';
 import LoginScreen from '@/components/LoginScreen';
 import PushPermissionModal from '@/components/PushPermissionModal';
 import LicenseBlockScreen from '@/components/LicenseBlockScreen';
+import { BackupReminderChecker } from '@/components/BackupReminder';
 import { getLicenseStatus } from '@/lib/license';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 export default function AppLayout() {
-  const {} = useTranslation();
+  const { t } = useTranslation();
   useThemeColor(); // Apply saved theme color on mount
   useCloudAutoBackup(); // Auto cloud backup on app open (if enabled & subscribed)
   const { multiUserEnabled, currentUser, loading } = useAuth();
@@ -105,8 +106,14 @@ export default function AppLayout() {
     return () => clearInterval(interval);
   }, [storeSettings?.deviceId, storeSettings?.licenseStatus, storeSettings?.licenseKey, storeSettings?.id, storeSettings?.isSyncedWithServer]);
 
-  // Loading state
-  if (storeSettings === undefined || loading) return null;
+  // Loading state — tampilkan spinner, bukan blank page
+  if (storeSettings === undefined || loading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">{t('common:common.loading')}</p>
+      </div>
+    );
+  }
 
   // Show onboarding if not done yet
   if (!storeSettings || !storeSettings.onboardingDone) {
@@ -131,6 +138,7 @@ export default function AppLayout() {
       </main>
       <BottomNav />
       <PushPermissionModal />
+      <BackupReminderChecker />
     </div>
   );
 }

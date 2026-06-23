@@ -80,7 +80,8 @@
     "restoreError": "Failed to read/restore backup file",
     "cloudRestoreSuccess": "Data restored from cloud!",
     "cloudRestoreError": "Failed to restore from cloud",
-    "cloudLoadError": "Failed to load cloud backups"
+    "cloudLoadError": "Failed to load cloud backups",
+    "saveFailed": "Failed to save store settings"
   },
   "language": {
     "title": "Choose Language",

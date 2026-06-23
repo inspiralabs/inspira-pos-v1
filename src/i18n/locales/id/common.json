@@ -76,7 +76,14 @@
     "reload": "Muat ulang",
     "goHome": "Ke beranda",
     "copyDetails": "Salin detail",
-    "copyPrompt": "Salin detail error berikut:"
+    "copyPrompt": "Salin detail error berikut:",
+    "copySuccess": "Detail error berhasil disalin",
+    "contactAdmin": "Hubungi Admin",
+    "contactAdminMessage": "Halo Admin, saya mengalami error di Inspira POS:",
+    "backupTitle": "Backup Data Anda",
+    "backupDescription": "Data Anda masih aman di perangkat ini. Unduh backup sebelum melanjutkan.",
+    "downloadBackup": "Download Backup Sekarang",
+    "backupFailed": "Gagal membuat backup"
   },
   "notFound": {
     "title": "404",

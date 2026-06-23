@@ -80,7 +80,8 @@
     "restoreError": "Gagal membaca / restore file backup",
     "cloudRestoreSuccess": "Data berhasil di-restore dari cloud!",
     "cloudRestoreError": "Gagal restore dari cloud",
-    "cloudLoadError": "Gagal memuat daftar backup cloud"
+    "cloudLoadError": "Gagal memuat daftar backup cloud",
+    "saveFailed": "Gagal menyimpan pengaturan toko"
   },
   "language": {
     "title": "Pilih Bahasa",

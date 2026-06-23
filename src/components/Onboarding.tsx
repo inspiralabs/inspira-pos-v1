@@ -273,6 +273,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         }
 
         await markAllFeaturesSeen();
+        const saved = await db.storeSettings.toCollection().first();
+        if (!saved?.onboardingDone) throw new Error('Gagal menyimpan pengaturan toko');
         toast.success(t('toast.restoreSuccess'));
         onComplete();
       } catch {
@@ -300,6 +302,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         deviceId: crypto.randomUUID(),
       });
     }
+    const saved = await db.storeSettings.toCollection().first();
+    if (!saved?.onboardingDone) throw new Error('Gagal menyimpan pengaturan toko');
     await markAllFeaturesSeen();
     toast.success(successMsg);
     onComplete();
@@ -416,7 +420,14 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         toast.info('Setup selesai secara offline. Riwayat lisensi akan disinkronkan saat terhubung internet.');
       }
 
+      const saved = await db.storeSettings.toCollection().first();
+      if (!saved?.onboardingDone) {
+        throw new Error('Gagal menyimpan pengaturan toko');
+      }
+
       onComplete();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('toast.saveFailed'));
     } finally {
       setSaving(false);
     }

@@ -80,7 +80,8 @@
     "restoreError": "Gagal membaca / pulihkan fail backup",
     "cloudRestoreSuccess": "Data berjaya dipulihkan dari cloud!",
     "cloudRestoreError": "Gagal memulihkan dari cloud",
-    "cloudLoadError": "Gagal memuat senarai backup cloud"
+    "cloudLoadError": "Gagal memuat senarai backup cloud",
+    "saveFailed": "Gagal menyimpan tetapan kedai"
   },
   "language": {
     "title": "Pilih Bahasa",

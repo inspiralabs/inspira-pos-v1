@@ -97,7 +97,7 @@ export default function Dashboard() {
   const txCount = todayTransactions?.length ?? 0;
   const expenseCount = todayExpenses?.length ?? 0;
 
-  const showBackup = !backupDismissed && storeSettings && storeSettings.licenseStatus === 'ACTIVE' && shouldShowBackupReminder(storeSettings.lastBackupAt) && can('manage_backup');
+  const showBackup = !backupDismissed && storeSettings && shouldShowBackupReminder(storeSettings.lastBackupAt) && can('manage_backup');
 
   const quickActions: { to: string; icon: typeof ShoppingCart; label: string; color: string; perm?: PermissionKey }[] = [
     { to: '/cashier', icon: ShoppingCart, label: t('quickActions.cashier'), color: 'bg-primary/10 text-primary', perm: 'create_transaction' },
