@@ -3,10 +3,6 @@ import App from "./App.tsx";
 import "./index.css";
 import "./i18n";
 
-// Global handlers for errors that React's ErrorBoundary cannot catch:
-//  - unhandled promise rejections (async code)
-//  - uncaught runtime errors (event handlers, setTimeout, etc.)
-// For now we log to the console; this is also where a remote logger would hook in.
 if (typeof window !== "undefined") {
   window.addEventListener("unhandledrejection", (event) => {
     console.error("[UnhandledRejection]", event.reason);
@@ -20,6 +16,17 @@ if (typeof window !== "undefined") {
       error: event.error,
     });
   });
+
+  // Request persistent storage so IndexedDB data survives browser-close
+  // and browser-level "clear on exit" privacy settings.
+  // PWA installed apps get this automatically; regular browser sessions need
+  // an explicit request. Without this, storeSettings (including onboardingDone)
+  // can be evicted, causing a blank onboarding screen on next visit.
+  if (navigator.storage?.persist) {
+    navigator.storage.persist().catch(() => {
+      // Non-fatal — best-effort storage is the fallback
+    });
+  }
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
