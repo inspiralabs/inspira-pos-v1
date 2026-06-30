@@ -840,6 +840,51 @@ class PosDatabase extends Dexie {
         }));
       if (links.length > 0) await tx.table('productOptionLinks').bulkAdd(links);
     });
+
+    // Version 17 — Perbaiki tanggal-string pada data yang ter-restore SEBELUM fix
+    //   reviveDates (lihat src/lib/backup.ts). JSON mengubah Date -> string ISO;
+    //   restore lama menyimpannya apa adanya sehingga query rentang tanggal
+    //   (mis. laporan penjualan) tidak cocok. Migrasi ini sekali-jalan mengubah
+    //   semua field bertipe tanggal-string kembali menjadi Date.
+    this.version(17).stores({
+      categories:              '++id, name, isDeleted',
+      products:                '++id, name, &sku, categoryId, barcode, isDeleted, createdBy, updatedBy, unit',
+      suppliers:               '++id, name, isDeleted',
+      customers:               '++id, name, isDeleted',
+      stockIns:                '++id, productId, supplierId, date, createdBy',
+      stockOuts:               '++id, productId, date, createdBy',
+      hppHistory:              '++id, productId, date',
+      paymentMethods:          '++id, name, category',
+      transactions:            '++id, date, &receiptNumber, paymentMethodId, status, orderNumber, createdBy',
+      transactionItems:        '++id, transactionId, productId',
+      transactionItemOptions:  '++id, transactionItemId, optionGroupId, optionId',
+      storeSettings:           '++id',
+      units:                   '++id, &name, isDeleted',
+      users:                   '++id, &username, role, isActive',
+      expenseCategories:       '++id, name, isDeleted',
+      expenses:                '++id, date, categoryId, paymentMethodId, createdBy, isDeleted',
+      debts:                   '++id, &transactionId, customerId, status, createdAt',
+      debtPayments:            '++id, debtId, date, paymentMethodId, createdBy',
+      productOptionGroups:     '++id, productId, isDeleted',
+      productOptions:          '++id, groupId, isDeleted',
+      productOptionLinks:      '++id, productId, groupId, isDeleted',
+    }).upgrade(async (tx) => {
+      const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
+      const tables = [
+        'categories', 'products', 'suppliers', 'customers', 'stockIns', 'stockOuts',
+        'hppHistory', 'paymentMethods', 'transactions', 'transactionItems', 'storeSettings',
+        'units', 'users', 'expenseCategories', 'expenses', 'debts', 'debtPayments',
+        'productOptionGroups', 'productOptions', 'productOptionLinks',
+      ];
+      for (const name of tables) {
+        await tx.table(name).toCollection().modify((row: Record<string, unknown>) => {
+          for (const k of Object.keys(row)) {
+            const v = row[k];
+            if (typeof v === 'string' && ISO.test(v)) row[k] = new Date(v);
+          }
+        });
+      }
+    });
   }
 }
 
