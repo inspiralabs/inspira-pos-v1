@@ -102,6 +102,18 @@ export interface ProductOption {
   deletedAt: Date | null;
 }
 
+// Tautan many-to-many: grup opsi/topping global <-> produk.
+// Sebuah grup (mis. "Topping") kini bisa dipakai-ulang di banyak menu
+// (makanan & minuman) tanpa diinput ulang per produk.
+export interface ProductOptionLink {
+  id?: number;
+  productId: number;   // FK ke products
+  groupId: number;     // FK ke productOptionGroups
+  createdAt: Date;
+  isDeleted: number;   // 0 = aktif, 1 = tautan dilepas
+  deletedAt: Date | null;
+}
+
 export interface TransactionItemOption {
   id?: number;
   transactionItemId: number;  // FK ke transactionItems
@@ -320,6 +332,7 @@ class PosDatabase extends Dexie {
   debtPayments!: Table<DebtPayment>;
   productOptionGroups!: Table<ProductOptionGroup>;
   productOptions!: Table<ProductOption>;
+  productOptionLinks!: Table<ProductOptionLink>;
 
   constructor() {
     super('inspirapos-db');
@@ -783,6 +796,50 @@ class PosDatabase extends Dexie {
         }
       });
     });
+
+    // Version 16 — Topping/opsi global yang bisa dipakai-ulang lintas menu.
+    //   * `productOptionLinks` (BARU) menautkan grup opsi ke banyak produk (M2M).
+    //   * Migrasi: tiap grup lama (yang terikat 1 produk) dibuatkan satu tautan
+    //     ke produk asalnya → perilaku kasir tidak berubah, tapi grup kini muncul
+    //     di katalog global dan bisa ditautkan ke menu lain.
+    //   ponytail: tidak ada auto-dedup grup bernama sama dari produk berbeda —
+    //     menggabungkannya berisiko (opsi bisa berbeda). Pemilik merapikan manual.
+    this.version(16).stores({
+      categories:              '++id, name, isDeleted',
+      products:                '++id, name, &sku, categoryId, barcode, isDeleted, createdBy, updatedBy, unit',
+      suppliers:               '++id, name, isDeleted',
+      customers:               '++id, name, isDeleted',
+      stockIns:                '++id, productId, supplierId, date, createdBy',
+      stockOuts:               '++id, productId, date, createdBy',
+      hppHistory:              '++id, productId, date',
+      paymentMethods:          '++id, name, category',
+      transactions:            '++id, date, &receiptNumber, paymentMethodId, status, orderNumber, createdBy',
+      transactionItems:        '++id, transactionId, productId',
+      transactionItemOptions:  '++id, transactionItemId, optionGroupId, optionId',
+      storeSettings:           '++id',
+      units:                   '++id, &name, isDeleted',
+      users:                   '++id, &username, role, isActive',
+      expenseCategories:       '++id, name, isDeleted',
+      expenses:                '++id, date, categoryId, paymentMethodId, createdBy, isDeleted',
+      debts:                   '++id, &transactionId, customerId, status, createdAt',
+      debtPayments:            '++id, debtId, date, paymentMethodId, createdBy',
+      productOptionGroups:     '++id, productId, isDeleted',
+      productOptions:          '++id, groupId, isDeleted',
+      productOptionLinks:      '++id, productId, groupId, isDeleted',
+    }).upgrade(async (tx) => {
+      const groups = await tx.table('productOptionGroups').toArray();
+      const now = new Date();
+      const links = groups
+        .filter((g: ProductOptionGroup) => g.isDeleted === 0 && g.productId)
+        .map((g: ProductOptionGroup) => ({
+          productId: g.productId,
+          groupId: g.id!,
+          createdAt: now,
+          isDeleted: 0,
+          deletedAt: null,
+        }));
+      if (links.length > 0) await tx.table('productOptionLinks').bulkAdd(links);
+    });
   }
 }
 
@@ -861,6 +918,29 @@ export async function seedDefaultData() {
         await db.storeSettings.update(settings.id!, updates);
       }
     }
+  }
+
+  // Seed katalog topping global (idempotent — hanya saat katalog masih kosong).
+  // Grup global (productId 0, multi-select, opsional) — pemilik tinggal mencentangnya
+  // di menu mana pun (makanan/minuman) lewat dialog "Topping & Opsi".
+  const optionGroupCount = await db.productOptionGroups.count();
+  if (optionGroupCount === 0) {
+    const now = new Date();
+    const groupId = await db.productOptionGroups.add({
+      productId: 0,
+      name: 'Topping',
+      isRequired: 0,
+      isMultiSelect: 1,
+      sortOrder: 0,
+      createdAt: now,
+      isDeleted: 0,
+      deletedAt: null,
+    });
+    await db.productOptions.bulkAdd([
+      { groupId: groupId as number, name: 'Sosis',  additionalPrice: 2000, sortOrder: 0, createdAt: now, isDeleted: 0, deletedAt: null },
+      { groupId: groupId as number, name: 'Keju',   additionalPrice: 3000, sortOrder: 1, createdAt: now, isDeleted: 0, deletedAt: null },
+      { groupId: groupId as number, name: 'Telur',  additionalPrice: 4000, sortOrder: 2, createdAt: now, isDeleted: 0, deletedAt: null },
+    ]);
   }
 
   // Seed default expense categories (idempotent — runs only when empty)

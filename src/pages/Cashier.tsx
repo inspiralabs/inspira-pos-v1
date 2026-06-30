@@ -33,6 +33,7 @@ interface SelectedOption {
   optionId: number;
   optionName: string;
   additionalPrice: number;
+  quantity: number; // jumlah topping (mis. sosis x2). Selalu >= 1.
 }
 
 interface CartItem {
@@ -111,6 +112,7 @@ export default function Kasir() {
   const [subMenuProduct, setSubMenuProduct] = useState<Product | null>(null);
   const [subMenuGroups, setSubMenuGroups] = useState<(ProductOptionGroup & { options: ProductOption[] })[]>([]);
   const [subMenuSelections, setSubMenuSelections] = useState<Record<number, number[]>>({}); // groupId -> optionIds[]
+  const [subMenuQty, setSubMenuQty] = useState<Record<number, number>>({}); // optionId -> qty (untuk grup multi-select)
 
   const products = useLiveQuery(() => db.products.where('isDeleted').equals(0).toArray());
   const categories = useLiveQuery(() => db.categories.where('isDeleted').equals(0).toArray());
@@ -122,8 +124,8 @@ export default function Kasir() {
   // Set productId yang punya sub-menu aktif — dipakai untuk tampilkan badge di product card
   const productsWithSubMenu = useLiveQuery(
     async () => {
-      const groups = await db.productOptionGroups.where('isDeleted').equals(0).toArray();
-      return new Set(groups.map(g => g.productId));
+      const links = await db.productOptionLinks.where('isDeleted').equals(0).toArray();
+      return new Set(links.map(l => l.productId));
     }
   );
 
@@ -159,9 +161,14 @@ export default function Kasir() {
 
   // Buka sub-menu dialog atau langsung tambah ke cart jika tidak ada sub-menu
   const handleProductTap = async (product: Product) => {
-    // Cek apakah produk punya sub-menu
-    const groups = await db.productOptionGroups
+    // Cek topping/opsi yang ditautkan ke produk ini (katalog global via links).
+    const links = await db.productOptionLinks
       .where('productId').equals(product.id!)
+      .filter(l => l.isDeleted === 0)
+      .toArray();
+    const groupIds = links.map(l => l.groupId);
+    const groups = groupIds.length === 0 ? [] : await db.productOptionGroups
+      .where('id').anyOf(groupIds)
       .filter(g => g.isDeleted === 0)
       .toArray()
       .then(arr => arr.sort((a, b) => a.sortOrder - b.sortOrder));
@@ -190,6 +197,7 @@ export default function Kasir() {
         }
       });
       setSubMenuSelections(preSelect);
+      setSubMenuQty({});
     } else {
       addToCart(product, []);
     }
@@ -214,12 +222,15 @@ export default function Kasir() {
       for (const optId of selectedIds) {
         const opt = group.options.find(o => o.id === optId);
         if (opt) {
+          // Qty hanya berlaku untuk grup multi-select (mis. topping). Grup pilih-satu selalu 1.
+          const quantity = group.isMultiSelect === 1 ? Math.max(1, subMenuQty[optId] ?? 1) : 1;
           selectedOptions.push({
             groupId: group.id!,
             groupName: group.name,
             optionId: opt.id!,
             optionName: opt.name,
             additionalPrice: opt.additionalPrice,
+            quantity,
           });
         }
       }
@@ -229,6 +240,7 @@ export default function Kasir() {
     setSubMenuProduct(null);
     setSubMenuGroups([]);
     setSubMenuSelections({});
+    setSubMenuQty({});
   };
 
   const addToCart = (product: Product, selectedOptions: SelectedOption[] = []) => {
@@ -247,8 +259,8 @@ export default function Kasir() {
           return c;
         });
       }
-      // Harga dasar produk + harga tambahan opsi yang dipilih
-      const optionsPrice = selectedOptions.reduce((s, o) => s + o.additionalPrice, 0);
+      // Harga dasar produk + harga tambahan opsi (harga x qty per opsi)
+      const optionsPrice = selectedOptions.reduce((s, o) => s + o.additionalPrice * o.quantity, 0);
       // Jika ada selectedOptions, harga jual termasuk opsi
       // Diskon default dari produk
       const defDiscType = product.defaultDiscountType ?? null;
@@ -334,13 +346,13 @@ export default function Kasir() {
   };
 
   const getItemSubtotal = (item: CartItem & { _optionsPrice?: number }) => {
-    const optionsPrice = item._optionsPrice ?? item.selectedOptions?.reduce((s, o) => s + o.additionalPrice, 0) ?? 0;
+    const optionsPrice = item._optionsPrice ?? item.selectedOptions?.reduce((s, o) => s + o.additionalPrice * (o.quantity ?? 1), 0) ?? 0;
     const base = (item.product.price + optionsPrice) * item.qty;
     return Math.max(0, base - getItemDiscountAmount(item));
   };
 
   const getItemBasePrice = (item: CartItem & { _optionsPrice?: number }) => {
-    const optionsPrice = item._optionsPrice ?? item.selectedOptions?.reduce((s, o) => s + o.additionalPrice, 0) ?? 0;
+    const optionsPrice = item._optionsPrice ?? item.selectedOptions?.reduce((s, o) => s + o.additionalPrice * (o.quantity ?? 1), 0) ?? 0;
     return item.product.price + optionsPrice;
   };
 
@@ -1121,7 +1133,7 @@ export default function Kasir() {
                         <div className="flex flex-wrap gap-1 mt-1">
                           {item.selectedOptions.map((opt, i) => (
                             <span key={i} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                              {opt.optionName}{opt.additionalPrice > 0 ? ` +${rp(opt.additionalPrice)}` : ''}
+                              {opt.optionName}{(opt.quantity ?? 1) > 1 ? ` ×${opt.quantity}` : ''}{opt.additionalPrice > 0 ? ` +${rp(opt.additionalPrice * (opt.quantity ?? 1))}` : ''}
                             </span>
                           ))}
                         </div>
@@ -2216,6 +2228,35 @@ export default function Kasir() {
                     );
                   })}
                 </div>
+
+                {/* Pengatur jumlah untuk opsi terpilih pada grup multi-select (mis. sosis ×2) */}
+                {group.isMultiSelect === 1 && (subMenuSelections[group.id!] ?? []).length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    {(subMenuSelections[group.id!] ?? []).map(optId => {
+                      const opt = group.options.find(o => o.id === optId);
+                      if (!opt) return null;
+                      const qty = Math.max(1, subMenuQty[optId] ?? 1);
+                      return (
+                        <div key={optId} className="flex items-center justify-between bg-muted/40 rounded-lg px-3 py-1.5">
+                          <span className="text-xs font-medium truncate flex-1">
+                            {opt.name}{opt.additionalPrice > 0 ? ` (+${rp(opt.additionalPrice)})` : ''}
+                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button type="button" variant="outline" size="icon" className="h-7 w-7"
+                              onClick={() => setSubMenuQty(prev => ({ ...prev, [optId]: Math.max(1, (prev[optId] ?? 1) - 1) }))}>
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="text-sm font-semibold w-5 text-center">{qty}</span>
+                            <Button type="button" variant="outline" size="icon" className="h-7 w-7"
+                              onClick={() => setSubMenuQty(prev => ({ ...prev, [optId]: (prev[optId] ?? 1) + 1 }))}>
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
 
@@ -2224,7 +2265,8 @@ export default function Kasir() {
               const totalExtra = subMenuGroups.flatMap(g =>
                 (subMenuSelections[g.id!] ?? []).map(optId => {
                   const opt = g.options.find(o => o.id === optId);
-                  return opt?.additionalPrice ?? 0;
+                  const q = g.isMultiSelect === 1 ? Math.max(1, subMenuQty[optId] ?? 1) : 1;
+                  return (opt?.additionalPrice ?? 0) * q;
                 })
               ).reduce((s, v) => s + v, 0);
               return totalExtra > 0 ? (
@@ -2239,7 +2281,7 @@ export default function Kasir() {
               <Button
                 variant="outline"
                 className="flex-1 h-11"
-                onClick={() => { setSubMenuProduct(null); setSubMenuGroups([]); setSubMenuSelections({}); }}
+                onClick={() => { setSubMenuProduct(null); setSubMenuGroups([]); setSubMenuSelections({}); setSubMenuQty({}); }}
               >
                 Batal
               </Button>

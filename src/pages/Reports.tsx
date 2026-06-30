@@ -13,7 +13,6 @@ import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import ExportReportDialog from '@/components/reports/ExportReportDialog';
-import { toast } from 'sonner';
 import { isNativePlatform, printRawNativeBluetooth, getDailyReportESCPOSData, type DailyReportPrintData } from '@/lib/printer';
 import DailyReportReceipt from '@/components/reports/DailyReportReceipt';
 import { useTranslation } from 'react-i18next';
@@ -210,10 +209,6 @@ export default function Laporan() {
             variant="outline" 
             className="h-9 gap-1.5" 
             onClick={() => {
-              if (storeSettings?.licenseStatus !== 'ACTIVE') {
-                toast.error("Fitur Dinonaktifkan: Ekspor laporan PDF/Excel hanya tersedia untuk lisensi Aktif. Hubungi Admin untuk melakukan aktivasi!");
-                return;
-              }
               setExportOpen(true);
             }}
           >

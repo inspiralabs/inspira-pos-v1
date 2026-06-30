@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -34,14 +35,24 @@ interface OptionManagerProps {
 }
 
 function SubMenuManager({ productId, productName, open, onClose, rp }: OptionManagerProps) {
+  // Katalog global: semua grup opsi/topping aktif (dipakai-ulang lintas menu).
   const groups = useLiveQuery(
     () => db.productOptionGroups
-      .where('productId').equals(productId)
-      .filter(g => g.isDeleted === 0)
+      .where('isDeleted').equals(0)
       .toArray()
       .then(arr => arr.sort((a, b) => a.sortOrder - b.sortOrder)),
+    []
+  );
+
+  // Tautan grup -> produk ini (untuk menentukan grup mana yang aktif di menu ini).
+  const links = useLiveQuery(
+    () => db.productOptionLinks
+      .where('productId').equals(productId)
+      .filter(l => l.isDeleted === 0)
+      .toArray(),
     [productId]
   );
+  const linkedSet = new Set((links ?? []).map(l => l.groupId));
 
   const [addingGroup, setAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -50,11 +61,26 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
   const [expandedGroupId, setExpandedGroupId] = useState<number | null>(null);
   const [deleteGroupId, setDeleteGroupId] = useState<number | null>(null);
 
+  const toggleLink = async (groupId: number) => {
+    const existing = await db.productOptionLinks
+      .where('productId').equals(productId)
+      .filter(l => l.groupId === groupId)
+      .first();
+    if (linkedSet.has(groupId)) {
+      if (existing?.id) await db.productOptionLinks.update(existing.id, { isDeleted: 1, deletedAt: new Date() });
+    } else if (existing?.id) {
+      await db.productOptionLinks.update(existing.id, { isDeleted: 0, deletedAt: null });
+    } else {
+      await db.productOptionLinks.add({ productId, groupId, createdAt: new Date(), isDeleted: 0, deletedAt: null });
+    }
+  };
+
   const handleAddGroup = async () => {
     if (!newGroupName.trim()) return;
     const maxOrder = groups?.length ? Math.max(...groups.map(g => g.sortOrder)) + 1 : 0;
-    await db.productOptionGroups.add({
-      productId,
+    // Grup global (productId 0) — langsung ditautkan ke produk yang sedang dibuka.
+    const groupId = await db.productOptionGroups.add({
+      productId: 0,
       name: newGroupName.trim(),
       isRequired: newGroupRequired ? 1 : 0,
       isMultiSelect: newGroupMulti ? 1 : 0,
@@ -63,18 +89,20 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
       isDeleted: 0,
       deletedAt: null,
     });
+    await db.productOptionLinks.add({ productId, groupId: groupId as number, createdAt: new Date(), isDeleted: 0, deletedAt: null });
     setNewGroupName('');
     setNewGroupRequired(false);
     setNewGroupMulti(false);
     setAddingGroup(false);
-    toast.success('Grup sub-menu ditambahkan');
+    toast.success('Topping/opsi ditambahkan & ditautkan ke menu ini');
   };
 
   const handleDeleteGroup = async (groupId: number) => {
     await db.productOptionGroups.update(groupId, { isDeleted: 1, deletedAt: new Date() });
     await db.productOptions.where('groupId').equals(groupId).modify({ isDeleted: 1, deletedAt: new Date() });
+    await db.productOptionLinks.where('groupId').equals(groupId).modify({ isDeleted: 1, deletedAt: new Date() });
     setDeleteGroupId(null);
-    toast.success('Grup dihapus');
+    toast.success('Topping/opsi dihapus dari katalog');
   };
 
   return (
@@ -83,19 +111,19 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <ListPlus className="w-4 h-4 text-primary" />
-            Sub-Menu: {productName}
+            Topping & Opsi: {productName}
           </DialogTitle>
         </DialogHeader>
         <p className="text-xs text-muted-foreground -mt-1">
-          Kelola opsi tambahan seperti topping, level pedas, ukuran, dll.
+          Centang topping/opsi dari katalog yang tersedia untuk menu ini. Katalog dipakai-ulang untuk semua menu (makanan & minuman).
         </p>
 
         <div className="space-y-3 mt-2">
           {(!groups || groups.length === 0) && !addingGroup && (
             <div className="text-center py-8 text-muted-foreground">
               <ListPlus className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Belum ada sub-menu</p>
-              <p className="text-xs mt-1">Tambah grup opsi seperti Topping, Level Pedas, dll.</p>
+              <p className="text-sm">Katalog topping/opsi masih kosong</p>
+              <p className="text-xs mt-1">Tambah topping/opsi seperti Sosis, Level Pedas, Ukuran, dll.</p>
             </div>
           )}
 
@@ -103,6 +131,8 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
             <GroupCard
               key={group.id}
               group={group}
+              linked={linkedSet.has(group.id!)}
+              onToggleLink={() => toggleLink(group.id!)}
               expanded={expandedGroupId === group.id}
               onToggle={() => setExpandedGroupId(expandedGroupId === group.id ? null : group.id!)}
               onDelete={() => setDeleteGroupId(group.id!)}
@@ -146,7 +176,7 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
           ) : (
             <Button variant="outline" className="w-full gap-2" onClick={() => setAddingGroup(true)}>
               <Plus className="w-4 h-4" />
-              Tambah Grup Sub-Menu
+              Tambah Topping/Opsi ke Katalog
             </Button>
           )}
         </div>
@@ -158,8 +188,8 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
       <AlertDialog open={!!deleteGroupId} onOpenChange={() => setDeleteGroupId(null)}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Grup Sub-Menu?</AlertDialogTitle>
-            <AlertDialogDescription>Semua opsi dalam grup ini juga akan dihapus. Transaksi lama tidak terpengaruh.</AlertDialogDescription>
+            <AlertDialogTitle>Hapus dari Katalog?</AlertDialogTitle>
+            <AlertDialogDescription>Topping/opsi ini akan dihapus dari katalog dan dilepas dari SEMUA menu yang memakainya. Transaksi lama tidak terpengaruh.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
@@ -173,13 +203,15 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
 
 interface GroupCardProps {
   group: ProductOptionGroup;
+  linked: boolean;
+  onToggleLink: () => void;
   expanded: boolean;
   onToggle: () => void;
   onDelete: () => void;
   rp: (n: number) => string;
 }
 
-function GroupCard({ group, expanded, onToggle, onDelete, rp }: GroupCardProps) {
+function GroupCard({ group, linked, onToggleLink, expanded, onToggle, onDelete, rp }: GroupCardProps) {
   const options = useLiveQuery(
     () => db.productOptions
       .where('groupId').equals(group.id!)
@@ -268,7 +300,10 @@ function GroupCard({ group, expanded, onToggle, onDelete, rp }: GroupCardProps) 
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 p-3 bg-muted/40 cursor-pointer" onClick={onToggle}>
+        <div className={cn('flex items-center gap-2 p-3 cursor-pointer', linked ? 'bg-primary/10' : 'bg-muted/40')} onClick={onToggle}>
+          <div onClick={e => e.stopPropagation()} className="shrink-0">
+            <Checkbox checked={linked} onCheckedChange={onToggleLink} aria-label="Pakai untuk menu ini" />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold truncate">{group.name}</p>
@@ -665,7 +700,7 @@ export default function Produk() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-primary"
-                          title="Kelola Sub-Menu"
+                          title="Topping & Opsi"
                           onClick={(e) => { e.stopPropagation(); setSubMenuProduct(p); }}
                         >
                           <ListPlus className="w-3.5 h-3.5" />
@@ -879,7 +914,7 @@ export default function Produk() {
                   onClick={() => handleSave(true)}
                   disabled={!name.trim() || !categoryId}
                 >
-                  Simpan & Atur Sub-Menu
+                  Simpan & Atur Topping
                 </Button>
               </div>
             ) : (
@@ -895,7 +930,7 @@ export default function Produk() {
                   disabled={!name.trim() || !categoryId}
                 >
                   <ListPlus className="w-4 h-4" />
-                  Simpan & Kelola Sub-Menu
+                  Simpan & Atur Topping
                 </Button>
               </div>
             )}

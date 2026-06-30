@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { exportBackupData } from '@/components/BackupReminder';
 import { restoreFromBackupData } from '@/lib/backup';
 import { useAuth } from '@/hooks/use-auth';
+import { getLicenseStatus } from '@/lib/license';
 import LockedPage from '@/components/LockedPage';
 
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -23,7 +24,8 @@ export default function BackupRestoreSettings() {
     return <LockedPage title={t('backupRestore.locked.title')} permissionLabel={t('backupRestore.locked.permissionLabel')} />;
   }
 
-  if (storeSettings && storeSettings.licenseStatus !== 'ACTIVE') {
+  const licenseStatus = storeSettings ? getLicenseStatus(storeSettings) : 'TRIAL';
+  if (storeSettings && licenseStatus !== 'ACTIVE' && licenseStatus !== 'TRIAL') {
     return (
       <div className="px-4 pt-6 pb-4 space-y-4">
         <div className="flex items-center gap-2">

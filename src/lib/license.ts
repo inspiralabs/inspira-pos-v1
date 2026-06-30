@@ -84,6 +84,18 @@ export function getLicenseStatus(settings: any): 'TRIAL' | 'ACTIVE' | 'EXPIRED' 
 }
 
 /**
+ * Tier efektif untuk gating fitur. Selama TRIAL pengguna mendapat akses penuh
+ * seperti PRO; saat ACTIVE mengikuti planTier; selain itu (EXPIRED/REVOKED,
+ * yang sudah diblok di level app) jatuh ke LITE.
+ */
+export function getEffectiveTier(settings: any): 'LITE' | 'PRO' {
+  const status = getLicenseStatus(settings);
+  if (status === 'TRIAL') return 'PRO';
+  if (status === 'ACTIVE') return settings?.planTier === 'PRO' ? 'PRO' : 'LITE';
+  return 'LITE';
+}
+
+/**
  * Helper to calculate remaining trial days.
  */
 export function getTrialDaysLeft(settings: any): number {
