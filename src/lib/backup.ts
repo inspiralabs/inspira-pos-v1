@@ -8,7 +8,7 @@ import { db, type Product } from '@/lib/db';
  * Dipisah dari komponen UI supaya logika yang sama tidak terduplikasi.
  */
 
-export const BACKUP_VERSION = 6;
+export const BACKUP_VERSION = 7;
 
 // Bentuk longgar — file backup bisa berasal dari versi lama (v1–v6).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +36,32 @@ export async function buildBackupData() {
     expenses: await db.expenses.toArray(),
     debts: await db.debts.toArray(),
     debtPayments: await db.debtPayments.toArray(),
+    productOptionGroups: await db.productOptionGroups.toArray(),
+    productOptions: await db.productOptions.toArray(),
+    productOptionLinks: await db.productOptionLinks.toArray(),
   };
+}
+
+// Format string yang dihasilkan JSON.stringify(Date), mis. "2026-06-30T09:49:00.000Z".
+const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Hidupkan kembali field tanggal: JSON mengubah Date -> string ISO, sehingga
+ * setelah restore query rentang tanggal berindeks (mis. laporan penjualan)
+ * tidak cocok karena IndexedDB membandingkan String vs Date. Ubah balik ke Date.
+ */
+export function reviveDates<T>(rows: T[] | undefined): T[] {
+  if (!Array.isArray(rows)) return [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    for (const k of Object.keys(row)) {
+      const v = (row as Record<string, unknown>)[k];
+      if (typeof v === 'string' && ISO_DATETIME.test(v)) {
+        (row as Record<string, unknown>)[k] = new Date(v);
+      }
+    }
+  }
+  return rows;
 }
 
 /** Nama file backup standar, mis. inspirapos-backup-2026-06-11.json */
@@ -83,6 +108,17 @@ async function clearAllTables(includeConditional: BackupData) {
   if (Array.isArray(includeConditional.customers)) await db.customers.clear();
   await db.debts.clear();
   await db.debtPayments.clear();
+  // Topping/opsi (v7+) — hanya bersihkan bila backup membawanya, supaya restore
+  // file lama (tanpa tabel ini) tidak menghapus katalog topping yang sudah ada.
+  if (
+    Array.isArray(includeConditional.productOptionGroups) ||
+    Array.isArray(includeConditional.productOptions) ||
+    Array.isArray(includeConditional.productOptionLinks)
+  ) {
+    await db.productOptionGroups.clear();
+    await db.productOptions.clear();
+    await db.productOptionLinks.clear();
+  }
 }
 
 /**
@@ -91,6 +127,11 @@ async function clearAllTables(includeConditional: BackupData) {
  */
 export async function restoreFromBackupData(data: unknown): Promise<void> {
   validateBackupData(data);
+
+  // Pulihkan tipe Date untuk semua tabel sebelum disimpan ulang (lihat reviveDates).
+  for (const key of Object.keys(data)) {
+    if (Array.isArray((data as BackupData)[key])) reviveDates((data as BackupData)[key]);
+  }
 
   // Snapshot untuk rollback.
   const snapshot = {
@@ -111,6 +152,9 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
     expenses: await db.expenses.toArray(),
     debts: await db.debts.toArray(),
     debtPayments: await db.debtPayments.toArray(),
+    productOptionGroups: await db.productOptionGroups.toArray(),
+    productOptions: await db.productOptions.toArray(),
+    productOptionLinks: await db.productOptionLinks.toArray(),
   };
 
   try {
@@ -136,6 +180,9 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
     if (data.expenses?.length) await db.expenses.bulkAdd(data.expenses);
     if (data.debts?.length) await db.debts.bulkAdd(data.debts);
     if (data.debtPayments?.length) await db.debtPayments.bulkAdd(data.debtPayments);
+    if (data.productOptionGroups?.length) await db.productOptionGroups.bulkAdd(data.productOptionGroups);
+    if (data.productOptions?.length) await db.productOptions.bulkAdd(data.productOptions);
+    if (data.productOptionLinks?.length) await db.productOptionLinks.bulkAdd(data.productOptionLinks);
 
     // Units (v3+ backup) atau diturunkan dari produk (backup v1/v2).
     if (Array.isArray(data.units) && data.units.length > 0) {
@@ -205,6 +252,9 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
       await db.customers.clear();
       await db.debts.clear();
       await db.debtPayments.clear();
+      await db.productOptionGroups.clear();
+      await db.productOptions.clear();
+      await db.productOptionLinks.clear();
 
       if (snapshot.categories.length) await db.categories.bulkAdd(snapshot.categories);
       if (snapshot.products.length) await db.products.bulkAdd(snapshot.products);
@@ -223,6 +273,9 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
       if (snapshot.expenses.length) await db.expenses.bulkAdd(snapshot.expenses);
       if (snapshot.debts.length) await db.debts.bulkAdd(snapshot.debts);
       if (snapshot.debtPayments.length) await db.debtPayments.bulkAdd(snapshot.debtPayments);
+      if (snapshot.productOptionGroups.length) await db.productOptionGroups.bulkAdd(snapshot.productOptionGroups);
+      if (snapshot.productOptions.length) await db.productOptions.bulkAdd(snapshot.productOptions);
+      if (snapshot.productOptionLinks.length) await db.productOptionLinks.bulkAdd(snapshot.productOptionLinks);
     } catch {
       throw new Error('Import gagal dan rollback gagal. Coba restore dari file backup.');
     }
