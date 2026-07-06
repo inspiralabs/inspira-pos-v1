@@ -44,8 +44,6 @@ const ADD_ONS_DATA = [
   { id: 104, name: "Ingredient Tracking BOM", price: "Rp 299.000/outlet/bln", desc: "Pelacakan stok bahan baku (Bill of Materials) yang terpotong otomatis saat terjual.", category: "operasional", plan: "pro" },
   { id: 105, name: "Advanced analytics dashboard", price: "Rp 399.000/bln", desc: "Dashboard analisis bisnis cerdas dengan prediksi performa dan tren penjualan.", category: "dashboard", plan: "pro" },
   { id: 106, name: "Inter-branch transfer", price: "Rp 499.000/bln", desc: "Kirim dan mutasi stok inventaris antar cabang dengan pencatatan yang rapi.", category: "operasional", plan: "pro" },
-  { id: 107, name: "Dedicated support 24/7", price: "Hubungi Sales", desc: "Dukungan bantuan teknis prioritas yang siap melayani Anda kapan saja 24 jam sehari.", category: "operasional", plan: "pro" },
-  { id: 108, name: "Custom API integration", price: "Hubungi Sales", desc: "Integrasi API kustom dengan sistem ERP, akuntansi, atau platform pihak ketiga lainnya.", category: "fitur", plan: "pro" }
 ];
 
 const FAQS_DATA = [
