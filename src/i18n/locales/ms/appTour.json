@@ -1,0 +1,34 @@
+{
+  "title": "Jom kenal dulu",
+  "slide": "Langkah {{number}}",
+  "finish": "Ok, mula jualan!",
+  "skip": "Langkau",
+  "slides": {
+    "cashier": {
+      "title": "Juruwang",
+      "description": "Terima pesanan dan cetak resit di sini.",
+      "cta": "Buka Juruwang"
+    },
+    "products": {
+      "title": "Menu & Produk",
+      "description": "Tambah menu, tetapkan harga, dan stok barang.",
+      "cta": "Urus Menu"
+    },
+    "reports": {
+      "title": "Laporan",
+      "description": "Lihat jualan harian dan menu paling laris.",
+      "cta": "Lihat Laporan"
+    },
+    "trial": {
+      "title": "Perlu tahu"
+    }
+  },
+  "trialLimits": {
+    "days": "Percuma {{days}} hari — perlu lesen selepas tamat",
+    "products": "Boleh tambah sehingga {{maxProducts}} menu",
+    "transactions": "Maksimum {{maxTransactions}} transaksi semasa percubaan",
+    "receipt": "Resit ada tanda percubaan — hilang selepas pengaktifan",
+    "export": "Eksport PDF/Excel terhad — penuh selepas pengaktifan"
+  },
+  "trialBadge": "Percubaan · {{days}} hari lagi"
+}

@@ -701,20 +701,14 @@ export default function LandingPage() {
       {/* Add-ons Section (Interactive Grid with search and category filter) */}
       <section id="addons" className="py-20 bg-white border-y border-[#6e150f]/5">
         <div className="max-w-6xl mx-auto px-4 md:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.5 }}
-            className="text-center max-w-2xl mx-auto mb-12 space-y-3"
-          >
+          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
             <h2 className="text-3xl font-extrabold tracking-tight text-[#6e150f]">
               Modul Tambahan (Add-ons) Fleksibel
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base">
               Pilih paket Anda di bawah ini untuk melihat modul tambahan yang tersedia.
             </p>
-          </motion.div>
+          </div>
 
           {/* Plan Selector */}
           <Tabs.Root 
@@ -725,65 +719,44 @@ export default function LandingPage() {
             }}
             className="flex justify-center mb-8"
           >
-            <Tabs.List className="inline-flex p-1 rounded-full bg-[#6e150f]/5 border border-[#6e150f]/10 relative">
+            <Tabs.List className="inline-flex p-1 rounded-full bg-[#6e150f]/5 border border-[#6e150f]/10">
               <Tabs.Trigger 
                 value="lite"
-                className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
-                  addonPlan === 'lite' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
+                  addonPlan === 'lite' ? 'bg-[#6e150f] text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
                 }`}
               >
-                {addonPlan === 'lite' && (
-                  <motion.div 
-                    layoutId="activeAddonPlan" 
-                    className="absolute inset-0 bg-[#6e150f] rounded-full z-0"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">Add-Ons UMKM Lite</span>
+                Add-Ons UMKM Lite
               </Tabs.Trigger>
               <Tabs.Trigger 
                 value="pro"
-                className={`px-5 py-2 rounded-full text-xs font-bold transition-all relative outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
-                  addonPlan === 'pro' ? 'text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
+                  addonPlan === 'pro' ? 'bg-[#6e150f] text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
                 }`}
               >
-                {addonPlan === 'pro' && (
-                  <motion.div 
-                    layoutId="activeAddonPlan" 
-                    className="absolute inset-0 bg-[#6e150f] rounded-full z-0"
-                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">Add-Ons UMKM Pro</span>
+                Add-Ons UMKM Pro
               </Tabs.Trigger>
             </Tabs.List>
           </Tabs.Root>
 
           {/* Search bar and Category filter tabs */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-[#6e150f]/10">
-            {/* Category tabs */}
             <div className="flex flex-wrap gap-2">
               {(['all', 'fitur', 'dashboard', 'operasional'] as const).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold capitalize transition-all relative ${
+                  className={`px-4 py-2 rounded-lg text-xs font-bold capitalize transition-colors ${
                     selectedCategory === cat
-                      ? 'text-[#F5EFE6]'
+                      ? 'bg-[#6e150f] text-[#F5EFE6]'
                       : 'text-[#1A1A1A] hover:text-[#b92a1c]'
                   }`}
                 >
-                  {selectedCategory === cat && (
-                    <motion.div layoutId="activeAddonTab" className="absolute inset-0 bg-[#6e150f] rounded-lg z-0" />
-                  )}
-                  <span className="relative z-10">
-                    {cat === 'all' ? 'Semua Modul' : cat}
-                  </span>
+                  {cat === 'all' ? 'Semua Modul' : cat}
                 </button>
               ))}
             </div>
 
-            {/* Search inputs */}
             <div className="relative w-full md:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
@@ -791,7 +764,7 @@ export default function LandingPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari modul tambahan..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-[#F5EFE6]/50 border border-[#6e150f]/10 focus:outline-none focus:ring-2 focus:ring-[#6e150f]/20 focus:border-[#6e150f] transition-all"
+                className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-[#F5EFE6]/50 border border-[#6e150f]/10 focus:outline-none focus:ring-2 focus:ring-[#6e150f]/20 focus:border-[#6e150f] transition-colors"
               />
               {searchQuery && (
                 <button 
@@ -804,63 +777,52 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Add-ons list grid - animated dynamically */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <AnimatePresence>
-              {filteredAddOns.length > 0 ? (
-                filteredAddOns.map((addon) => (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.15 }}
-                    key={addon.id}
-                    className="flex flex-col p-6 rounded-2xl bg-[#F5EFE6]/30 border border-[#6e150f]/5 hover:border-[#6e150f]/20 hover:bg-white hover:-translate-y-1 hover:shadow-md transition-all duration-300"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10px] font-extrabold text-[#d0a139] uppercase tracking-wider bg-[#d0a139]/10 px-2 py-0.5 rounded-full">
-                        {addon.category}
-                      </span>
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                        addon.price === "Hubungi Sales" 
-                          ? 'bg-emerald-600/10 text-emerald-600' 
-                          : 'bg-[#6e150f]/10 text-[#6e150f]'
-                      }`}>
-                        {addon.price}
-                      </span>
-                    </div>
-                    <h3 className="text-base font-bold text-[#1A1A1A] mb-1.5">{addon.name}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                      {addon.desc}
-                    </p>
-                    {addon.price === "Hubungi Sales" && (
-                      <button
-                        onClick={() => {
-                          const waNumber = '6282124533265'; // Inspira Labs WhatsApp
-                          const message = encodeURIComponent(
-                            `Halo Admin Inspira POS, saya tertarik dan ingin bertanya lebih lanjut mengenai Add-on "${addon.name}" untuk paket UMKM ${addonPlan === 'lite' ? 'Lite' : 'Pro'}.`
-                          );
-                          window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
-                        }}
-                        className="mt-4 w-full py-2 px-4 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20BA5A] text-white transition-all flex items-center justify-center gap-1.5 shadow-sm"
-                      >
-                        Hubungi Sales via WA
-                      </button>
-                    )}
-                  </motion.div>
-                ))
-              ) : (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="col-span-full text-center py-12 text-muted-foreground flex flex-col items-center justify-center gap-2"
+            {filteredAddOns.length > 0 ? (
+              filteredAddOns.map((addon) => (
+                <div
+                  key={addon.id}
+                  className="flex flex-col p-6 rounded-2xl bg-[#F5EFE6]/30 border border-[#6e150f]/5 hover:border-[#6e150f]/20 hover:bg-white transition-colors"
                 >
-                  <Search className="w-8 h-8 text-[#6e150f]/20" />
-                  <p className="text-sm font-semibold">Modul tidak ditemukan</p>
-                  <p className="text-xs">Coba cari dengan kata kunci lain atau bersihkan filter.</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-extrabold text-[#d0a139] uppercase tracking-wider bg-[#d0a139]/10 px-2 py-0.5 rounded-full">
+                      {addon.category}
+                    </span>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
+                      addon.price === "Hubungi Sales" 
+                        ? 'bg-emerald-600/10 text-emerald-600' 
+                        : 'bg-[#6e150f]/10 text-[#6e150f]'
+                    }`}>
+                      {addon.price}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-[#1A1A1A] mb-1.5">{addon.name}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+                    {addon.desc}
+                  </p>
+                  {addon.price === "Hubungi Sales" && (
+                    <button
+                      onClick={() => {
+                        const waNumber = '6282124533265';
+                        const message = encodeURIComponent(
+                          `Halo Admin Inspira POS, saya tertarik dan ingin bertanya lebih lanjut mengenai Add-on "${addon.name}" untuk paket UMKM ${addonPlan === 'lite' ? 'Lite' : 'Pro'}.`
+                        );
+                        window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
+                      }}
+                      className="mt-4 w-full py-2 px-4 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20BA5A] text-white transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      Hubungi Sales via WA
+                    </button>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 text-muted-foreground flex flex-col items-center justify-center gap-2">
+                <Search className="w-8 h-8 text-[#6e150f]/20" />
+                <p className="text-sm font-semibold">Modul tidak ditemukan</p>
+                <p className="text-xs">Coba cari dengan kata kunci lain atau bersihkan filter.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>

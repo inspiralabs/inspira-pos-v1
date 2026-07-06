@@ -1,0 +1,34 @@
+{
+  "title": "Kenalan dulu, yuk",
+  "slide": "Langkah {{number}}",
+  "finish": "Oke, mulai jualan!",
+  "skip": "Lewati",
+  "slides": {
+    "cashier": {
+      "title": "Kasir",
+      "description": "Di sini kamu terima pesanan dan cetak struk.",
+      "cta": "Buka Kasir"
+    },
+    "products": {
+      "title": "Menu & Produk",
+      "description": "Tambah menu jualan, atur harga, dan stok barang.",
+      "cta": "Atur Menu"
+    },
+    "reports": {
+      "title": "Laporan",
+      "description": "Lihat omzet harian dan menu yang paling laris.",
+      "cta": "Lihat Laporan"
+    },
+    "trial": {
+      "title": "Yang perlu kamu tahu"
+    }
+  },
+  "trialLimits": {
+    "days": "Gratis {{days}} hari — habis itu perlu aktivasi lisensi",
+    "products": "Bisa tambah sampai {{maxProducts}} menu dulu",
+    "transactions": "Maksimal {{maxTransactions}} transaksi selama coba gratis",
+    "receipt": "Struk ada tulisan uji coba — hilang setelah aktivasi",
+    "export": "Unduh laporan PDF/Excel terbatas — lengkap setelah aktivasi"
+  },
+  "trialBadge": "Coba gratis · {{days}} hari lagi"
+}

@@ -1,0 +1,34 @@
+{
+  "title": "Quick tour",
+  "slide": "Step {{number}}",
+  "finish": "Let's start selling!",
+  "skip": "Skip",
+  "slides": {
+    "cashier": {
+      "title": "Cashier",
+      "description": "Take orders and print receipts here.",
+      "cta": "Open Cashier"
+    },
+    "products": {
+      "title": "Menu & Products",
+      "description": "Add items, set prices, and track stock.",
+      "cta": "Manage Menu"
+    },
+    "reports": {
+      "title": "Reports",
+      "description": "See daily sales and best-selling items.",
+      "cta": "View Reports"
+    },
+    "trial": {
+      "title": "Good to know"
+    }
+  },
+  "trialLimits": {
+    "days": "Free for {{days}} days — license needed after that",
+    "products": "Up to {{maxProducts}} menu items during free trial",
+    "transactions": "Max {{maxTransactions}} transactions during free trial",
+    "receipt": "Receipts show a trial mark — removed after activation",
+    "export": "PDF/Excel export is limited — full access after activation"
+  },
+  "trialBadge": "Free trial · {{days}} days left"
+}

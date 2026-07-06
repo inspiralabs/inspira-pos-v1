@@ -1,90 +1,109 @@
 {
   "slides": {
     "welcome": {
-      "title": "Selamat Datang ke Inspira POS",
-      "description": "Aplikasi kasir (POS) pintar. Urus jualan, stok, dan laporan kewangan kedai anda — semua dalam satu aplikasi, terus dari telefon, tanpa susah."
+      "title": "Hai! Ini Inspira POS",
+      "description": "Juruwang di telefon anda. Jualan, stok, omzet — semua di sini."
     },
     "cashier": {
-      "title": "Kasir Pantas & Mudah",
-      "description": "Proses transaksi dengan pantas. Pilih produk, tetapkan diskaun, dan pilih kaedah pembayaran — semua dalam beberapa saat."
+      "title": "Terima pesanan",
+      "description": ""
     },
     "stock": {
-      "title": "Urus Stok Automatik",
-      "description": "Rekod barang masuk dari pembekal, stok berkurang secara automatik semasa jualan, dan kos barang dihitung secara automatik."
+      "title": "Stok berkurang sendiri",
+      "description": "Setiap jualan, stok berkurang automatik."
     },
     "reports": {
-      "title": "Laporan Lengkap",
-      "description": "Pantau jualan harian, untung, dan produk paling laris. Semua data dipaparkan dalam grafik yang mudah difahami."
+      "title": "Lihat omzet",
+      "description": "Jualan harian dan menu paling laris."
     },
     "data": {
-      "title": "Data Selamat di Telefon Anda",
-      "description": "Semua data disimpan di peranti anda. Tiada internet diperlukan, tiada pelayan diperlukan. Percuma selamanya!"
+      "title": "Data di telefon anda",
+      "description": "Tetap berfungsi tanpa internet."
+    },
+    "trial": {
+      "title": "Percubaan percuma 14 hari",
+      "description": "Cuba semua. Ada beberapa had — lihat di bawah."
     }
   },
+  "trialLimits": {
+    "days": "Percuma {{days}} hari",
+    "products": "Sehingga {{maxProducts}} menu",
+    "transactions": "Maks. {{maxTransactions}} transaksi",
+    "receipt": "Ada tanda percubaan pada resit",
+    "export": "Muat turun laporan terhad"
+  },
   "install": {
-    "installed": "Sudah Dipasang!",
-    "title": "Pasang sebagai Aplikasi",
-    "installedDesc": "Inspira POS sudah dipasang. Anda boleh buka terus dari skrin utama!",
-    "desc": "Pasang Inspira POS di telefon anda supaya boleh diakses terus dari skrin utama, tanpa buka pelayar.",
-    "button": "Pasang sebagai Aplikasi",
-    "continueBrowser": "Teruskan di Pelayar",
-    "chromeHint": "Untuk pasang, buka dalam pelayar Chrome, kemudian ketuk menu (⋮) → \"Add to Home screen\" atau \"Install app\".",
-    "safariHint": "Di Safari iOS: ketuk butang Share (↑) → \"Add to Home Screen\""
+    "installed": "Sudah dipasang!",
+    "title": "Pasang di telefon",
+    "installedDesc": "Buka terus dari skrin utama.",
+    "desc": "Pasang supaya boleh dibuka dari skrin utama.",
+    "button": "Pasang Sekarang",
+    "continueBrowser": "Terus di Pelayar",
+    "chromeHint": "Buka di Chrome, ketuk menu (⋮) → \"Tambah ke Skrin Utama\".",
+    "safariHint": "Di Safari: Share (↑) → \"Add to Home Screen\""
   },
   "store": {
-    "title": "Sediakan Kedai Anda",
-    "subtitle": "Maklumat ini akan dipaparkan di resit",
+    "title": "Maklumat kedai",
+    "subtitle": "Dipaparkan pada resit pelanggan",
     "storeName": "Nama Kedai",
-    "storeNamePlaceholder": "Cth: Kedai Berkah Jaya",
+    "storeNamePlaceholder": "Contoh: Seblak Mak Nyonya",
     "address": "Alamat",
-    "addressPlaceholder": "Cth: Jln Merdeka No. 10, Kuala Lumpur",
+    "addressPlaceholder": "Contoh: Jl. Merdeka No. 10",
     "phone": "Nombor Telefon",
-    "phonePlaceholder": "Cth: 0123456789",
-    "loadDummy": "Muat data contoh",
-    "loadDummyDesc": "11 produk, 2 pembekal, 3 transaksi demo",
-    "theme": "Warna Tema",
-    "themeDesc": "Pilih warna utama aplikasi",
-    "start": "Mula Jual! 🚀",
-    "saving": "Menyimpan..."
+    "phonePlaceholder": "Contoh: 08123456789",
+    "businessType": "Jenis perniagaan",
+    "businessTypeHint": "Pilih untuk muat menu contoh",
+    "businessTypeNone": "Langkau — isi sendiri",
+    "theme": "Warna aplikasi",
+    "themeDesc": "Boleh ditukar di Tetapan",
+    "trialBadge": "Percuma 14 hari"
+  },
+  "businessTypes": {
+    "seblak": "Seblak",
+    "fried-chicken": "Ayam Goreng",
+    "bakso": "Bakso",
+    "mie-ayam": "Mee Ayam",
+    "soto": "Soto",
+    "nasi-goreng": "Nasi Goreng",
+    "kopi": "Kopi & Minuman"
   },
   "restore": {
     "title": "Sudah ada backup?",
-    "desc": "Pulihkan fail JSON dari peranti lama — tak perlu sediakan kedai semula.",
-    "backupButton": "Pulihkan Kedai dari Backup",
-    "restoring": "Memulihkan data...",
+    "desc": "Pulihkan data dari telefon lama.",
+    "backupButton": "Pulihkan dari Backup",
+    "restoring": "Memulihkan...",
     "cloudTitle": "Pulihkan dari Cloud",
-    "cloudSubtitle": "Log masuk dengan akaun Google, kemudian pilih backup untuk dipulihkan.",
-    "cloudLogin": "Log masuk Google untuk melihat backup di cloud.",
+    "cloudSubtitle": "Log masuk Google, pilih backup.",
+    "cloudLogin": "Log masuk Google untuk lihat backup.",
     "googleContinue": "Teruskan dengan Google",
     "account": "Akaun Google",
     "switchAccount": "Tukar",
-    "noBackups": "Tiada backup di cloud untuk akaun ini.",
-    "restoringInProgress": "Memulihkan data… jangan tutup aplikasi."
+    "noBackups": "Tiada backup cloud.",
+    "restoringInProgress": "Jangan tutup aplikasi..."
   },
   "tnc": {
-    "agree": "Dengan meneruskan, saya bersetuju dengan",
-    "terms": "Syarat & Ketentuan",
+    "agree": "Dengan teruskan, saya bersetuju",
+    "terms": "Terma & Syarat",
     "and": "dan",
     "privacy": "Dasar Privasi"
   },
   "navigation": {
     "next": "Seterusnya",
-    "finish": "Mula Jual! 🚀",
+    "finish": "Mula Jualan!",
     "saving": "Menyimpan..."
   },
   "toast": {
     "googleLoginFailed": "Log masuk Google gagal",
     "restoreInvalidFile": "Fail backup tidak sah",
-    "restoreNoData": "Fail backup tidak mengandungi data",
+    "restoreNoData": "Fail backup kosong",
     "restoreSuccess": "Data berjaya dipulihkan!",
-    "restoreError": "Gagal membaca / pulihkan fail backup",
-    "cloudRestoreSuccess": "Data berjaya dipulihkan dari cloud!",
-    "cloudRestoreError": "Gagal memulihkan dari cloud",
-    "cloudLoadError": "Gagal memuat senarai backup cloud",
-    "saveFailed": "Gagal menyimpan tetapan kedai"
+    "restoreError": "Gagal memulihkan backup",
+    "cloudRestoreSuccess": "Berjaya dipulihkan dari cloud!",
+    "cloudRestoreError": "Gagal pulihkan dari cloud",
+    "cloudLoadError": "Gagal memuat senarai backup",
+    "saveFailed": "Gagal menyimpan maklumat kedai"
   },
   "language": {
-    "title": "Pilih Bahasa",
-    "subtitle": "Pilih bahasa pilihan anda"
+    "title": "Pilih Bahasa"
   }
 }

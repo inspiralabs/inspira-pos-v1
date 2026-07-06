@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, isStockManaged, type TransactionItemRecord } from '@/lib/db';
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { ShoppingCart, Package, BarChart3, TrendingUp, AlertTriangle, Receipt, ChevronRight, ClipboardList, Wallet } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
@@ -8,8 +8,6 @@ import { format } from 'date-fns';
 import { id, enUS, ms } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import BackupReminder, { shouldShowBackupReminder, exportBackupData } from '@/components/BackupReminder';
-import WhatsNewModal from '@/components/WhatsNewModal';
-import { getUnseenFeatures } from '@/lib/whats-new';
 import { useAuth } from '@/hooks/use-auth';
 import type { PermissionKey } from '@/lib/db';
 import { useTranslation } from 'react-i18next';
@@ -20,34 +18,13 @@ const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: '
 
 export default function Dashboard() {
   const { can } = useAuth();
-  const { t, i18n } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation(['dashboard', 'appTour']);
   const [backupDismissed, setBackupDismissed] = useState(false);
-  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
 
   const dateLocale = LOCALES[i18n.language] ?? id;
   const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
 
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
-
-  // Compute unseen features once storeSettings loaded. Memoized so the array
-  // identity is stable until seenWhatsNewIds actually changes.
-  const unseenFeatures = useMemo(
-    () => getUnseenFeatures(storeSettings?.seenWhatsNewIds),
-    [storeSettings?.seenWhatsNewIds],
-  );
-
-  // Auto-show modal once on landing if there are unseen features.
-  // Only fires when onboarding is done (existing user, not first-launch flow).
-  useEffect(() => {
-    if (!storeSettings) return;
-    if (!storeSettings.onboardingDone) return;
-    if (unseenFeatures.length === 0) return;
-    setWhatsNewOpen(true);
-    // Intentionally only run when unseen list transitions from empty → non-empty
-    // for the *current* settings doc. The dependency on the array length
-    // guards against re-opening after dismissal in the same session.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeSettings?.id, unseenFeatures.length > 0]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -115,7 +92,7 @@ export default function Dashboard() {
           {storeSettings && getLicenseStatus(storeSettings) === 'TRIAL' && (
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-900/50 shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              Trial Mode ({getTrialDaysLeft(storeSettings)} Hari Tersisa)
+              {t('appTour:trialBadge', { days: getTrialDaysLeft(storeSettings) })}
             </span>
           )}
         </div>
@@ -267,11 +244,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      <WhatsNewModal
-        open={whatsNewOpen}
-        onOpenChange={setWhatsNewOpen}
-        features={unseenFeatures}
-      />
     </div>
   );
 }

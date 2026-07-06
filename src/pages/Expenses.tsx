@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import { useTranslation } from 'react-i18next';
 import NumberInput from '@/components/NumberInput';
+import { DatePicker, parseDateString, toDateString } from '@/components/ui/date-picker';
 import { ProGate } from '@/components/ProGate';
 
 type RangePreset = 'today' | '7' | '30' | 'month' | 'all';
@@ -465,11 +466,12 @@ export default function ExpensesPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>{t('expenses.dialog.dateLabel')}</Label>
-                  <Input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="h-11"
+                  <DatePicker
+                    value={parseDateString(date)}
+                    onChange={(d) => setDate(toDateString(d) || format(new Date(), 'yyyy-MM-dd'))}
+                    placeholder={t('expenses.dialog.dateLabel')}
+                    locale={dateLocale}
+                    buttonClassName="h-11"
                   />
                 </div>
               </div>

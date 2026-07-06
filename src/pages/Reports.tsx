@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { DatePicker, parseDateString, toDateString } from '@/components/ui/date-picker';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays, startOfDay, endOfDay } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
@@ -248,12 +248,12 @@ export default function Laporan() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="report-date" className="text-xs">{t('daily.reportDate')}</Label>
-              <Input
-                id="report-date"
-                type="date"
-                value={selectedDate}
-                onChange={e => setSelectedDate(e.target.value)}
+              <Label className="text-xs">{t('daily.reportDate')}</Label>
+              <DatePicker
+                value={parseDateString(selectedDate)}
+                onChange={(d) => setSelectedDate(toDateString(d) || format(new Date(), 'yyyy-MM-dd'))}
+                placeholder={t('daily.reportDate')}
+                buttonClassName="h-11"
               />
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">

@@ -294,7 +294,8 @@ export interface StoreSettings {
   logo?: string; // base64 JPEG compressed via compressImage()
   deviceId: string;
   multiUserEnabled?: boolean; // CR-multiuser: opt-in flag
-  seenWhatsNewIds?: string[]; // IDs of "What's New" features the user has dismissed
+  seenWhatsNewIds?: string[]; // legacy — dipakai untuk skip tour jika sudah pernah lihat popup lama
+  appTourDone?: boolean; // tour singkat setelah setup toko selesai
   cloudAutoBackupInterval?: 'off' | 'hourly' | 'daily' | 'weekly'; // auto cloud backup cadence (default off)
   cloudAutoBackupHours?: number; // interval jam bila cloudAutoBackupInterval === 'hourly'
   lastCloudBackupAt?: Date | null; // last successful upload to cloud

@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import NumberInput from '@/components/NumberInput';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+import { TRIAL_LIMITS } from '@/lib/trial-limits';
 
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -94,7 +95,7 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
     setNewGroupRequired(false);
     setNewGroupMulti(false);
     setAddingGroup(false);
-    toast.success('Topping/opsi ditambahkan & ditautkan ke menu ini');
+    toast.success('Kondimen ditambahkan ke menu ini');
   };
 
   const handleDeleteGroup = async (groupId: number) => {
@@ -102,7 +103,7 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
     await db.productOptions.where('groupId').equals(groupId).modify({ isDeleted: 1, deletedAt: new Date() });
     await db.productOptionLinks.where('groupId').equals(groupId).modify({ isDeleted: 1, deletedAt: new Date() });
     setDeleteGroupId(null);
-    toast.success('Topping/opsi dihapus dari katalog');
+    toast.success('Kondimen dihapus');
   };
 
   return (
@@ -111,19 +112,16 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <ListPlus className="w-4 h-4 text-primary" />
-            Topping & Opsi: {productName}
+            Kondimen: {productName}
           </DialogTitle>
         </DialogHeader>
-        <p className="text-xs text-muted-foreground -mt-1">
-          Centang topping/opsi dari katalog yang tersedia untuk menu ini. Katalog dipakai-ulang untuk semua menu (makanan & minuman).
-        </p>
 
         <div className="space-y-3 mt-2">
           {(!groups || groups.length === 0) && !addingGroup && (
             <div className="text-center py-8 text-muted-foreground">
               <ListPlus className="w-10 h-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Katalog topping/opsi masih kosong</p>
-              <p className="text-xs mt-1">Tambah topping/opsi seperti Sosis, Level Pedas, Ukuran, dll.</p>
+              <p className="text-sm">Belum ada kondimen</p>
+              <p className="text-xs mt-1">Contoh: Level Pedas, Ukuran, Extra Keju</p>
             </div>
           )}
 
@@ -142,13 +140,13 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
 
           {addingGroup ? (
             <div className="border border-border rounded-xl p-4 space-y-3 bg-muted/30">
-              <p className="text-sm font-semibold">Grup Baru</p>
+              <p className="text-sm font-semibold">Kondimen</p>
               <div className="space-y-1.5">
-                <Label className="text-xs">Nama Grup *</Label>
+                <Label className="text-xs">Nama kondimen *</Label>
                 <Input
                   value={newGroupName}
                   onChange={e => setNewGroupName(e.target.value)}
-                  placeholder="Contoh: Topping, Level Pedas, Ukuran"
+                  placeholder="Contoh: Level Pedas, Ukuran, Topping"
                   className="h-10"
                   autoFocus
                   onKeyDown={e => e.key === 'Enter' && handleAddGroup()}
@@ -166,7 +164,7 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleAddGroup} disabled={!newGroupName.trim()}>
-                  Simpan Grup
+                  Simpan
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => { setAddingGroup(false); setNewGroupName(''); }}>
                   Batal
@@ -176,7 +174,7 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
           ) : (
             <Button variant="outline" className="w-full gap-2" onClick={() => setAddingGroup(true)}>
               <Plus className="w-4 h-4" />
-              Tambah Topping/Opsi ke Katalog
+              Tambah kondimen
             </Button>
           )}
         </div>
@@ -188,8 +186,8 @@ function SubMenuManager({ productId, productName, open, onClose, rp }: OptionMan
       <AlertDialog open={!!deleteGroupId} onOpenChange={() => setDeleteGroupId(null)}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus dari Katalog?</AlertDialogTitle>
-            <AlertDialogDescription>Topping/opsi ini akan dihapus dari katalog dan dilepas dari SEMUA menu yang memakainya. Transaksi lama tidak terpengaruh.</AlertDialogDescription>
+            <AlertDialogTitle>Hapus kondimen ini?</AlertDialogTitle>
+            <AlertDialogDescription>Hilang dari semua menu yang memakainya. Struk lama tidak berubah.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
@@ -240,7 +238,7 @@ function GroupCard({ group, linked, onToggleLink, expanded, onToggle, onDelete, 
       isMultiSelect: editGroupMulti ? 1 : 0,
     });
     setIsEditingGroup(false);
-    toast.success('Grup sub-menu diperbarui');
+    toast.success('Kondimen diperbarui');
   };
 
   const handleAddOption = async () => {
@@ -272,7 +270,7 @@ function GroupCard({ group, linked, onToggleLink, expanded, onToggle, onDelete, 
       {isEditingGroup ? (
         <div className="p-3 bg-muted/40 space-y-3 border-b border-border" onClick={e => e.stopPropagation()}>
           <div className="space-y-1">
-            <Label className="text-xs">Nama Grup *</Label>
+            <Label className="text-xs">Nama kondimen *</Label>
             <Input 
               value={editGroupName} 
               onChange={e => setEditGroupName(e.target.value)} 
@@ -310,7 +308,7 @@ function GroupCard({ group, linked, onToggleLink, expanded, onToggle, onDelete, 
               {group.isRequired === 1 && <Badge variant="destructive" className="text-[9px] h-4 px-1">Wajib</Badge>}
               {group.isMultiSelect === 1 && <Badge variant="outline" className="text-[9px] h-4 px-1">Multi</Badge>}
             </div>
-            <p className="text-[10px] text-muted-foreground">{options?.length ?? 0} opsi</p>
+            <p className="text-[10px] text-muted-foreground">{options?.length ?? 0} pilihan</p>
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0" onClick={e => { e.stopPropagation(); setIsEditingGroup(true); }}>
             <Edit2 className="w-3.5 h-3.5" />
@@ -373,7 +371,7 @@ function GroupCard({ group, linked, onToggleLink, expanded, onToggle, onDelete, 
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus opsi ini?</AlertDialogTitle>
-            <AlertDialogDescription>Opsi ini akan dihapus dari sub-menu.</AlertDialogDescription>
+            <AlertDialogDescription>Pilihan ini akan dihapus dari kondimen.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
@@ -463,7 +461,7 @@ export default function Produk() {
     if (isTrial) {
       const activeCount = await db.products.where('isDeleted').equals(0).count();
       if (activeCount >= 20) {
-        toast.error("Batas Produk Tercapai: Maksimal 20 produk dalam mode Trial. Hubungi Admin untuk upgrade lisensi!");
+        toast.error(`Menu sudah ${TRIAL_LIMITS.maxProducts} item — aktivasi lisensi untuk tambah lagi.`);
         return;
       }
     }
@@ -510,7 +508,7 @@ export default function Produk() {
       if (isTrial) {
         const activeCount = await db.products.where('isDeleted').equals(0).count();
         if (activeCount >= 20) {
-          toast.error("Batas Produk Tercapai: Maksimal 20 produk dalam mode Trial. Hubungi Admin untuk upgrade lisensi!");
+          toast.error(`Menu sudah ${TRIAL_LIMITS.maxProducts} item — aktivasi lisensi untuk tambah lagi.`);
           return;
         }
       }
@@ -700,7 +698,7 @@ export default function Produk() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-primary"
-                          title="Topping & Opsi"
+                          title="Kondimen"
                           onClick={(e) => { e.stopPropagation(); setSubMenuProduct(p); }}
                         >
                           <ListPlus className="w-3.5 h-3.5" />
@@ -914,7 +912,7 @@ export default function Produk() {
                   onClick={() => handleSave(true)}
                   disabled={!name.trim() || !categoryId}
                 >
-                  Simpan & Atur Topping
+                  Simpan & atur kondimen
                 </Button>
               </div>
             ) : (
@@ -930,7 +928,7 @@ export default function Produk() {
                   disabled={!name.trim() || !categoryId}
                 >
                   <ListPlus className="w-4 h-4" />
-                  Simpan & Atur Topping
+                  Simpan & atur kondimen
                 </Button>
               </div>
             )}

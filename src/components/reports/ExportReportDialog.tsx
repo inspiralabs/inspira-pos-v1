@@ -11,8 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker, parseDateString, toDateString } from '@/components/ui/date-picker';
 import { exportReportToExcel } from '@/lib/export-report';
 
 interface ExportReportDialogProps {
@@ -89,29 +89,27 @@ export default function ExportReportDialog({
         <div className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="export-start" className="text-xs">
+              <Label className="text-xs">
                 {t('exportDialog.fromDate')}
               </Label>
-              <Input
-                id="export-start"
-                type="date"
-                value={startDate}
-                max={endDate || undefined}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-11"
+              <DatePicker
+                value={parseDateString(startDate)}
+                onChange={(d) => setStartDate(toDateString(d))}
+                placeholder={t('exportDialog.fromDate')}
+                toDate={parseDateString(endDate)}
+                buttonClassName="h-11"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="export-end" className="text-xs">
+              <Label className="text-xs">
                 {t('exportDialog.toDate')}
               </Label>
-              <Input
-                id="export-end"
-                type="date"
-                value={endDate}
-                min={startDate || undefined}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-11"
+              <DatePicker
+                value={parseDateString(endDate)}
+                onChange={(d) => setEndDate(toDateString(d))}
+                placeholder={t('exportDialog.toDate')}
+                fromDate={parseDateString(startDate)}
+                buttonClassName="h-11"
               />
             </div>
           </div>

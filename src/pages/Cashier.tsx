@@ -25,6 +25,7 @@ import CustomerPicker from '@/components/CustomerPicker';
 import LockedPage from '@/components/LockedPage';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ProGate } from '@/components/ProGate';
+import { TRIAL_LIMITS } from '@/lib/trial-limits';
 
 // Opsi yang dipilih saat transaksi
 interface SelectedOption {
@@ -435,7 +436,7 @@ export default function Kasir() {
     if (isTrial) {
       const txCount = await db.transactions.count();
       if (txCount >= 50) {
-        toast.error("Batas Transaksi Uji Coba Terlampaui: Maksimal 50 transaksi dalam mode Trial. Hubungi Admin untuk upgrade lisensi!");
+        toast.error(`Sudah ${TRIAL_LIMITS.maxTransactions} transaksi — aktivasi lisensi untuk lanjut jualan.`);
         return false;
       }
     }

@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Store, MapPin, Phone, ChevronRight, ChevronLeft, ShoppingCart, Package, BarChart3, Shield, Database, Palette, Download, CheckCircle2, Globe, Upload, Cloud, Loader2, DownloadCloud, LogOut, X } from 'lucide-react';
+import { Store, MapPin, Phone, ChevronRight, ChevronLeft, ShoppingCart, Package, BarChart3, Shield, Clock, Palette, Download, CheckCircle2, Globe, Upload, Cloud, Loader2, DownloadCloud, LogOut, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { db, type Product } from '@/lib/db';
-import { markAllFeaturesSeen, ALL_FEATURE_IDS } from '@/lib/whats-new';
+import { TRIAL_LIMITS } from '@/lib/trial-limits';
+import { UMKM_TYPES, seedUmkmDummy, type UmkmTypeId } from '@/lib/umkm-dummy-data';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import ThemeColorPicker from '@/components/ThemeColorPicker';
@@ -62,6 +62,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       description: t('slides.data.description'),
       color: 'text-warning bg-warning/10',
     },
+    {
+      icon: Clock,
+      title: t('slides.trial.title'),
+      description: t('slides.trial.description'),
+      color: 'text-amber-600 bg-amber-500/10',
+      isTrial: true,
+    },
   ], [t]);
   // Web/PWA: tutorial slides (0-3), install (4), store setup (5)
   // APK/native: tutorial slides (0-3), store setup (4)
@@ -70,7 +77,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [storeName, setStoreName] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
-  const [loadDummy, setLoadDummy] = useState(false);
+  const [businessType, setBusinessType] = useState<UmkmTypeId | null>(null);
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [themeColor, setThemeColorState] = useState('4');
@@ -101,87 +108,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const isInstallStep = hasInstallStep && step === tutorialSlides.length;
   const isStoreStep = step === tutorialSlides.length + (hasInstallStep ? 1 : 0);
   const tutorialIndex = step;
-
-  const seedDummyData = async () => {
-    const now = new Date();
-    const dummyProducts = [
-      { name: 'Nasi Goreng Spesial', sku: 'NG001', categoryId: 1, price: 15000, hpp: 8000, stock: 50, unit: 'porsi', description: 'Nasi goreng dengan telur mata sapi, ayam suwir, dan kerupuk', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Mie Goreng', sku: 'MG001', categoryId: 1, price: 12000, hpp: 6000, stock: 40, unit: 'porsi', description: 'Mie goreng dengan sayur dan telur', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Ayam Bakar', sku: 'AB001', categoryId: 1, price: 20000, hpp: 12000, stock: 30, unit: 'porsi', description: 'Ayam bakar bumbu kecap, sambal, dan lalapan', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Sate Ayam (10 tusuk)', sku: 'SA001', categoryId: 1, price: 18000, hpp: 10000, stock: 25, unit: 'porsi', description: 'Isi 10 tusuk + bumbu kacang + lontong', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Bakso Urat', sku: 'BU001', categoryId: 1, price: 15000, hpp: 7000, stock: 35, unit: 'mangkok', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Es Teh Manis', sku: 'ET001', categoryId: 2, price: 5000, hpp: 1500, stock: 100, unit: 'gelas', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Es Jeruk', sku: 'EJ001', categoryId: 2, price: 7000, hpp: 2500, stock: 80, unit: 'gelas', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Kopi Susu', sku: 'KS001', categoryId: 2, price: 10000, hpp: 4000, stock: 60, unit: 'gelas', description: 'Kopi susu gula aren', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Air Mineral', sku: 'AM001', categoryId: 2, price: 4000, hpp: 2000, stock: 120, unit: 'botol', description: '600ml', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Tisu', sku: 'TS001', categoryId: 3, price: 2000, hpp: 1000, stock: 200, unit: 'pcs', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'Kerupuk', sku: 'KR001', categoryId: 3, price: 3000, hpp: 1500, stock: 150, unit: 'bungkus', createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null },
-    ];
-
-    const dummySuppliers = [
-      { name: 'PT Bahan Segar', phone: '08111222333', address: 'Jl. Pasar Baru No. 15', notes: 'Supplier sayur & daging', createdAt: now, isDeleted: 0, deletedAt: null },
-      { name: 'UD Minuman Jaya', phone: '08222333444', address: 'Jl. Raya Industri No. 8', notes: 'Supplier minuman', createdAt: now, isDeleted: 0, deletedAt: null },
-    ];
-
-    // Ensure all units used by sample products exist in master units table.
-    // seedDefaultData() already adds the 9 default units; here we only add
-    // the extras that the sample data uses (e.g. 'mangkok', 'gelas').
-    const sampleUnits = Array.from(new Set(dummyProducts.map(p => p.unit).filter(Boolean)));
-    const existingUnits = await db.units.toArray();
-    const existingNames = new Set(existingUnits.map(u => u.name));
-    const unitNow = new Date();
-    for (const u of sampleUnits) {
-      if (existingNames.has(u)) continue;
-      try {
-        await db.units.add({
-          name: u,
-          isDefault: 1,
-          createdAt: unitNow,
-          isDeleted: 0,
-          deletedAt: null,
-        });
-        existingNames.add(u);
-      } catch {
-        // unique-constraint race: ignore
-      }
-    }
-
-    await db.products.bulkAdd(dummyProducts);
-    await db.suppliers.bulkAdd(dummySuppliers);
-
-    const discNull: 'percentage' | 'nominal' | null = null;
-
-    const tx1Id = await db.transactions.add({
-      subtotal: 40000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 40000,
-      paymentMethodId: 1, paymentAmount: 50000, change: 10000, profit: 21000,
-      date: new Date(now.getTime() - 3600000), receiptNumber: 'TX-DEMO-001',
-    });
-    await db.transactionItems.bulkAdd([
-      { transactionId: tx1Id as number, productId: 1, productName: 'Nasi Goreng Spesial', quantity: 2, price: 15000, hpp: 8000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 30000 },
-      { transactionId: tx1Id as number, productId: 6, productName: 'Es Teh Manis', quantity: 2, price: 5000, hpp: 1500, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
-    ]);
-
-    const tx2Id = await db.transactions.add({
-      subtotal: 30000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 30000,
-      paymentMethodId: 3, paymentAmount: 30000, change: 0, profit: 14000,
-      date: new Date(now.getTime() - 1800000), receiptNumber: 'TX-DEMO-002',
-    });
-    await db.transactionItems.bulkAdd([
-      { transactionId: tx2Id as number, productId: 3, productName: 'Ayam Bakar', quantity: 1, price: 20000, hpp: 12000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 20000 },
-      { transactionId: tx2Id as number, productId: 8, productName: 'Kopi Susu', quantity: 1, price: 10000, hpp: 4000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 10000 },
-    ]);
-
-    const tx3Id = await db.transactions.add({
-      subtotal: 40000, discountType: discNull, discountValue: 0, discountAmount: 0, total: 40000,
-      paymentMethodId: 1, paymentAmount: 50000, change: 10000, profit: 18500,
-      date: new Date(now.getTime() - 900000), receiptNumber: 'TX-DEMO-003',
-    });
-    await db.transactionItems.bulkAdd([
-      { transactionId: tx3Id as number, productId: 1, productName: 'Nasi Goreng Spesial', quantity: 1, price: 15000, hpp: 8000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 15000 },
-      { transactionId: tx3Id as number, productId: 4, productName: 'Sate Ayam (10 tusuk)', quantity: 1, price: 18000, hpp: 10000, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 18000 },
-      { transactionId: tx3Id as number, productId: 7, productName: 'Es Jeruk', quantity: 1, price: 7000, hpp: 2500, discountType: discNull, discountValue: 0, discountAmount: 0, subtotal: 7000 },
-    ]);
-  };
 
   const handleRestore = () => {
     if (restoring) return;
@@ -258,7 +184,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         // Restored storeSettings carries onboardingDone from the source device.
         // Force it true so the wizard closes and the app opens straight away.
         if (data.storeSettings?.length) {
-          const restored = data.storeSettings.map((s: Record<string, unknown>) => ({ ...s, onboardingDone: true }));
+          const restored = data.storeSettings.map((s: Record<string, unknown>) => ({ ...s, onboardingDone: true, appTourDone: true }));
           await db.storeSettings.bulkAdd(restored);
         } else {
           await db.storeSettings.add({
@@ -267,12 +193,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             phone: '',
             receiptFooter: 'Terima kasih atas kunjungan Anda!',
             onboardingDone: true,
+            appTourDone: true,
             lastBackupAt: null,
             deviceId: crypto.randomUUID(),
           });
         }
 
-        await markAllFeaturesSeen();
         const saved = await db.storeSettings.toCollection().first();
         if (!saved?.onboardingDone) throw new Error('Gagal menyimpan pengaturan toko');
         toast.success(t('toast.restoreSuccess'));
@@ -290,7 +216,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const finishAfterRestore = async (successMsg: string) => {
     const s = await db.storeSettings.toCollection().first();
     if (s?.id) {
-      await db.storeSettings.update(s.id, { onboardingDone: true });
+      await db.storeSettings.update(s.id, { onboardingDone: true, appTourDone: true });
     } else {
       await db.storeSettings.add({
         storeName: 'Toko Saya',
@@ -298,13 +224,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         phone: '',
         receiptFooter: 'Terima kasih atas kunjungan Anda!',
         onboardingDone: true,
+        appTourDone: true,
         lastBackupAt: null,
         deviceId: crypto.randomUUID(),
       });
     }
     const saved = await db.storeSettings.toCollection().first();
     if (!saved?.onboardingDone) throw new Error('Gagal menyimpan pengaturan toko');
-    await markAllFeaturesSeen();
     toast.success(successMsg);
     onComplete();
   };
@@ -364,6 +290,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           address: address.trim(),
           phone: phone.trim(),
           onboardingDone: true,
+          appTourDone: true,
           themeColor,
           licenseStatus: 'TRIAL',
           trialStartedAt,
@@ -378,6 +305,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           phone: phone.trim(),
           receiptFooter: 'Terima kasih atas kunjungan Anda!',
           onboardingDone: true,
+          appTourDone: true,
           lastBackupAt: null,
           themeColor,
           licenseStatus: 'TRIAL',
@@ -388,8 +316,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         });
       }
 
-      if (loadDummy) {
-        await seedDummyData();
+      if (businessType) {
+        await seedUmkmDummy(businessType);
       }
 
       // Sync onboarding to backend (Supabase) if online.
@@ -508,9 +436,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     </div>
                   )}
                   {tutorialIndex === 0 ? null : (
-                    <div className="space-y-3">
+                    <div className="space-y-3 w-full max-w-xs">
                       <h2 className="text-2xl font-bold tracking-tight">{slide.title}</h2>
-                      <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{slide.description}</p>
+                      {'isTrial' in slide && slide.isTrial ? (
+                        <ul className="text-left text-sm space-y-2">
+                          {(['days', 'products', 'transactions', 'receipt', 'export'] as const).map((key) => (
+                            <li key={key} className="flex gap-2 text-muted-foreground">
+                              <span className="text-primary shrink-0">•</span>
+                              {t(`trialLimits.${key}`, TRIAL_LIMITS)}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : slide.description ? (
+                        <p className="text-muted-foreground leading-relaxed mx-auto">{slide.description}</p>
+                      ) : null}
                     </div>
                   )}
                 </>
@@ -583,7 +522,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <p className="text-sm text-muted-foreground">{t('store.subtitle')}</p>
               <div className="inline-flex items-center gap-1.5 mx-auto text-xs font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-900/50 mt-1 shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                Mode Uji Coba (Trial 14 Hari) Aktif Otomatis
+                {t('store.trialBadge')}
               </div>
             </div>
 
@@ -766,18 +705,43 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 />
               </div>
 
-              {/* Dummy data toggle */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center">
-                    <Database className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t('store.loadDummy')}</p>
-                    <p className="text-[10px] text-muted-foreground">{t('store.loadDummyDesc')}</p>
-                  </div>
+              {/* Jenis usaha + contoh menu */}
+              <div className="space-y-2.5 p-3 rounded-xl bg-muted/50 border border-border">
+                <div>
+                  <p className="text-sm font-medium">{t('store.businessType')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('store.businessTypeHint')}</p>
                 </div>
-                <Switch checked={loadDummy} onCheckedChange={setLoadDummy} />
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBusinessType(null)}
+                    className={cn(
+                      'rounded-xl border-2 p-2.5 text-left transition-all min-h-[44px]',
+                      businessType === null
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/30',
+                    )}
+                  >
+                    <span className="text-lg">✨</span>
+                    <p className="text-[11px] font-semibold mt-1 leading-tight">{t('store.businessTypeNone')}</p>
+                  </button>
+                  {UMKM_TYPES.map(({ id, emoji }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setBusinessType(id)}
+                      className={cn(
+                        'rounded-xl border-2 p-2.5 text-left transition-all min-h-[44px]',
+                        businessType === id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/30',
+                      )}
+                    >
+                      <span className="text-lg">{emoji}</span>
+                      <p className="text-[11px] font-semibold mt-1 leading-tight">{t(`businessTypes.${id}`)}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Theme color picker */}

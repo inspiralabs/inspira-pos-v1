@@ -1,65 +1,85 @@
 {
   "slides": {
     "welcome": {
-      "title": "Welcome to Inspira POS",
-      "description": "A smart POS app. Manage sales, stock, and financial reports — all in one app, right from your phone, hassle-free."
+      "title": "Hi! This is Inspira POS",
+      "description": "Your phone cashier. Sales, stock, daily revenue — all here."
     },
     "cashier": {
-      "title": "Fast & Easy Cashier",
-      "description": "Process transactions quickly. Select products, set discounts, and choose payment methods — all in seconds."
+      "title": "Take orders",
+      "description": ""
     },
     "stock": {
-      "title": "Automatic Stock Management",
-      "description": "Record incoming stock from suppliers, stock decreases automatically on sales, and COGS is calculated automatically."
+      "title": "Stock updates itself",
+      "description": "Every sale reduces stock automatically."
     },
     "reports": {
-      "title": "Complete Reports",
-      "description": "Monitor daily sales, profit, and top-selling products. All data presented in easy-to-understand charts."
+      "title": "See your revenue",
+      "description": "Daily sales and top-selling items."
     },
     "data": {
-      "title": "Your Data Stays on Your Phone",
-      "description": "All data is stored on your device. No internet needed, no server needed. Free forever!"
+      "title": "Data stays on your phone",
+      "description": "Works without internet."
+    },
+    "trial": {
+      "title": "14-day free trial",
+      "description": "Try everything. A few limits apply — see below."
     }
+  },
+  "trialLimits": {
+    "days": "Free for {{days}} days",
+    "products": "Up to {{maxProducts}} menu items",
+    "transactions": "Max {{maxTransactions}} transactions",
+    "receipt": "Trial mark on receipts",
+    "export": "Limited report downloads"
   },
   "install": {
     "installed": "Installed!",
-    "title": "Install as App",
-    "installedDesc": "Inspira POS is installed. You can open it directly from your home screen!",
-    "desc": "Install Inspira POS on your phone to access it directly from the home screen, without opening a browser.",
-    "button": "Install as App",
+    "title": "Install on your phone",
+    "installedDesc": "Open it straight from your home screen.",
+    "desc": "Install to open from home screen without the browser.",
+    "button": "Install Now",
     "continueBrowser": "Continue in Browser",
-    "chromeHint": "To install, open in Chrome browser, then tap menu (⋮) → \"Add to Home screen\" or \"Install app\".",
-    "safariHint": "On Safari iOS: tap the Share button (↑) → \"Add to Home Screen\""
+    "chromeHint": "Open in Chrome, tap menu (⋮) → \"Add to Home screen\".",
+    "safariHint": "On Safari: Share (↑) → \"Add to Home Screen\""
   },
   "store": {
-    "title": "Set Up Your Store",
-    "subtitle": "This info will appear on receipts",
+    "title": "Your store info",
+    "subtitle": "Shown on customer receipts",
     "storeName": "Store Name",
-    "storeNamePlaceholder": "e.g. Berkah Jaya Store",
+    "storeNamePlaceholder": "e.g. Mak Nyonya Seblak",
     "address": "Address",
-    "addressPlaceholder": "e.g. 10 Merdeka St, Jakarta",
-    "phone": "Phone Number",
+    "addressPlaceholder": "e.g. 10 Merdeka St",
+    "phone": "Phone",
     "phonePlaceholder": "e.g. 08123456789",
-    "loadDummy": "Load sample data",
-    "loadDummyDesc": "11 products, 2 suppliers, 3 demo transactions",
-    "theme": "Theme Color",
-    "themeDesc": "Choose the app's main color",
-    "start": "Start Selling! 🚀",
-    "saving": "Saving..."
+    "businessType": "Business type",
+    "businessTypeHint": "Pick one to load sample menu items",
+    "businessTypeNone": "Skip — I'll add my own",
+    "theme": "App color",
+    "themeDesc": "Change anytime in Settings",
+    "trialBadge": "14 days free — try first"
+  },
+  "businessTypes": {
+    "seblak": "Seblak",
+    "fried-chicken": "Fried Chicken",
+    "bakso": "Meatball Soup",
+    "mie-ayam": "Chicken Noodles",
+    "soto": "Soto",
+    "nasi-goreng": "Fried Rice",
+    "kopi": "Coffee & Drinks"
   },
   "restore": {
-    "title": "Already have a backup?",
-    "desc": "Restore a JSON file from your old device — no need to set up the store again.",
-    "backupButton": "Restore Store from Backup",
-    "restoring": "Restoring data...",
+    "title": "Have a backup?",
+    "desc": "Restore data from your old phone.",
+    "backupButton": "Restore from Backup",
+    "restoring": "Restoring...",
     "cloudTitle": "Restore from Cloud",
-    "cloudSubtitle": "Sign in with Google, then choose a backup to restore.",
-    "cloudLogin": "Sign in with Google to view cloud backups.",
+    "cloudSubtitle": "Sign in with Google, pick a backup.",
+    "cloudLogin": "Sign in with Google to see backups.",
     "googleContinue": "Continue with Google",
     "account": "Google Account",
     "switchAccount": "Switch",
-    "noBackups": "No cloud backups for this account.",
-    "restoringInProgress": "Restoring data… do not close the app."
+    "noBackups": "No cloud backups yet.",
+    "restoringInProgress": "Don't close the app..."
   },
   "tnc": {
     "agree": "By continuing, I agree to the",
@@ -69,22 +89,21 @@
   },
   "navigation": {
     "next": "Next",
-    "finish": "Start Selling! 🚀",
+    "finish": "Start Selling!",
     "saving": "Saving..."
   },
   "toast": {
     "googleLoginFailed": "Google login failed",
     "restoreInvalidFile": "Invalid backup file",
-    "restoreNoData": "Backup file contains no data",
-    "restoreSuccess": "Data restored successfully!",
-    "restoreError": "Failed to read/restore backup file",
-    "cloudRestoreSuccess": "Data restored from cloud!",
-    "cloudRestoreError": "Failed to restore from cloud",
-    "cloudLoadError": "Failed to load cloud backups",
-    "saveFailed": "Failed to save store settings"
+    "restoreNoData": "Backup file is empty",
+    "restoreSuccess": "Data restored!",
+    "restoreError": "Failed to restore backup",
+    "cloudRestoreSuccess": "Restored from cloud!",
+    "cloudRestoreError": "Cloud restore failed",
+    "cloudLoadError": "Failed to load backups",
+    "saveFailed": "Failed to save store info"
   },
   "language": {
-    "title": "Choose Language",
-    "subtitle": "Select your preferred language"
+    "title": "Choose Language"
   }
 }

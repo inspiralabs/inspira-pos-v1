@@ -1,90 +1,109 @@
 {
   "slides": {
     "welcome": {
-      "title": "Selamat Datang di Inspira POS",
-      "description": "Aplikasi kasir (POS) pintar. Kelola penjualan, stok, dan laporan keuangan tokomu — semua dalam satu aplikasi, langsung dari HP, tanpa ribet."
+      "title": "Halo! Ini Inspira POS",
+      "description": "Kasir di HP kamu. Jualan, catat stok, lihat omzet — semua di sini."
     },
     "cashier": {
-      "title": "Kasir Cepat & Mudah",
-      "description": "Proses transaksi dengan cepat. Pilih produk, atur diskon, dan pilih metode pembayaran — semua dalam hitungan detik."
+      "title": "Terima pesanan",
+      "description": ""
     },
     "stock": {
-      "title": "Kelola Stok Otomatis",
-      "description": "Catat barang masuk dari supplier, stok berkurang otomatis saat penjualan, dan HPP dihitung otomatis."
+      "title": "Stok berkurang sendiri",
+      "description": "Tiap ada yang beli, stok otomatis berkurang."
     },
     "reports": {
-      "title": "Laporan Lengkap",
-      "description": "Pantau penjualan harian, profit, dan produk terlaris. Semua data tersaji dalam grafik yang mudah dipahami."
+      "title": "Lihat omzet",
+      "description": "Penjualan harian dan menu terlaris."
     },
     "data": {
-      "title": "Data Aman di HP Kamu",
-      "description": "Semua data tersimpan di perangkatmu. Tidak perlu internet, tidak perlu server. Gratis selamanya!"
+      "title": "Data di HP kamu",
+      "description": "Tetap jalan walau tanpa internet."
+    },
+    "trial": {
+      "title": "Coba gratis 14 hari",
+      "description": "Semua fitur bisa dicoba. Ada beberapa batasan — lihat di bawah."
     }
   },
+  "trialLimits": {
+    "days": "Gratis {{days}} hari",
+    "products": "Sampai {{maxProducts}} menu",
+    "transactions": "Maks. {{maxTransactions}} transaksi",
+    "receipt": "Ada tulisan uji coba di struk",
+    "export": "Unduh laporan terbatas"
+  },
   "install": {
-    "installed": "Sudah Terinstall!",
-    "title": "Install sebagai Aplikasi",
-    "installedDesc": "Inspira POS sudah terinstall. Kamu bisa buka langsung dari home screen!",
-    "desc": "Install Inspira POS di HP kamu supaya bisa diakses langsung dari home screen, tanpa buka browser.",
-    "button": "Install sebagai Aplikasi",
+    "installed": "Sudah terpasang!",
+    "title": "Pasang di HP",
+    "installedDesc": "Bisa dibuka langsung dari layar utama.",
+    "desc": "Pasang supaya bisa dibuka dari layar utama, tanpa buka browser.",
+    "button": "Pasang Sekarang",
     "continueBrowser": "Lanjut di Browser",
-    "chromeHint": "Untuk install, buka di browser Chrome lalu ketuk menu (⋮) → \"Add to Home screen\" atau \"Install app\".",
-    "safariHint": "Di Safari iOS: ketuk tombol Share (↑) → \"Add to Home Screen\""
+    "chromeHint": "Buka di Chrome, ketuk menu (⋮) → \"Tambahkan ke Layar Utama\".",
+    "safariHint": "Di Safari: tombol Share (↑) → \"Add to Home Screen\""
   },
   "store": {
-    "title": "Setup Toko Kamu",
-    "subtitle": "Isi data toko kamu",
+    "title": "Data tokomu",
+    "subtitle": "Muncul di struk pelanggan",
     "storeName": "Nama Toko",
-    "storeNamePlaceholder": "Contoh: Toko Berkah Jaya",
+    "storeNamePlaceholder": "Contoh: Seblak Mak Nyonya",
     "address": "Alamat",
-    "addressPlaceholder": "Contoh: Jl. Merdeka No. 10, Jakarta",
-    "phone": "Nomor Telepon",
+    "addressPlaceholder": "Contoh: Jl. Merdeka No. 10",
+    "phone": "Nomor HP",
     "phonePlaceholder": "Contoh: 08123456789",
-    "loadDummy": "Muat data contoh",
-    "loadDummyDesc": "11 produk, 2 supplier, 3 transaksi demo",
-    "theme": "Warna Tema",
-    "themeDesc": "Pilih warna utama aplikasi",
-    "start": "Mulai Jualan! 🚀",
-    "saving": "Menyimpan..."
+    "businessType": "Jenis usaha",
+    "businessTypeHint": "Pilih supaya menu contoh langsung siap dipakai",
+    "businessTypeNone": "Kosongkan — isi sendiri nanti",
+    "theme": "Warna aplikasi",
+    "themeDesc": "Bisa diganti kapan saja di Pengaturan",
+    "trialBadge": "Gratis 14 hari — coba dulu"
+  },
+  "businessTypes": {
+    "seblak": "Seblak",
+    "fried-chicken": "Ayam Goreng",
+    "bakso": "Bakso",
+    "mie-ayam": "Mie Ayam",
+    "soto": "Soto",
+    "nasi-goreng": "Nasi Goreng",
+    "kopi": "Kopi & Minuman"
   },
   "restore": {
     "title": "Sudah punya backup?",
-    "desc": "Restore file JSON dari device lama tanpa perlu setup toko ulang.",
-    "backupButton": "Restore Toko dari Backup",
-    "restoring": "Restore data...",
-    "cloudTitle": "Restore dari Cloud",
-    "cloudSubtitle": "Login dengan akun Google, lalu pilih backup untuk dipulihkan.",
-    "cloudLogin": "Login Google untuk melihat backup di cloud.",
+    "desc": "Pulihkan data dari HP lama.",
+    "backupButton": "Pulihkan dari Backup",
+    "restoring": "Memulihkan...",
+    "cloudTitle": "Pulihkan dari Cloud",
+    "cloudSubtitle": "Login Google, pilih backup.",
+    "cloudLogin": "Login Google untuk lihat backup.",
     "googleContinue": "Lanjut dengan Google",
     "account": "Akun Google",
     "switchAccount": "Ganti",
-    "noBackups": "Tidak ada backup di cloud untuk akun ini.",
-    "restoringInProgress": "Memulihkan data… jangan tutup aplikasi."
+    "noBackups": "Belum ada backup di cloud.",
+    "restoringInProgress": "Jangan tutup aplikasi..."
   },
   "tnc": {
-    "agree": "Dengan melanjutkan, saya menyetujui",
+    "agree": "Dengan lanjut, saya setuju",
     "terms": "Syarat & Ketentuan",
     "and": "dan",
     "privacy": "Kebijakan Privasi"
   },
   "navigation": {
     "next": "Lanjut",
-    "finish": "Mulai Jualan! 🚀",
+    "finish": "Mulai Jualan!",
     "saving": "Menyimpan..."
   },
   "toast": {
     "googleLoginFailed": "Login Google gagal",
     "restoreInvalidFile": "File backup tidak valid",
-    "restoreNoData": "File backup tidak berisi data",
-    "restoreSuccess": "Data berhasil di-restore!",
-    "restoreError": "Gagal membaca / restore file backup",
-    "cloudRestoreSuccess": "Data berhasil di-restore dari cloud!",
-    "cloudRestoreError": "Gagal restore dari cloud",
-    "cloudLoadError": "Gagal memuat daftar backup cloud",
-    "saveFailed": "Gagal menyimpan pengaturan toko"
+    "restoreNoData": "File backup kosong",
+    "restoreSuccess": "Data berhasil dipulihkan!",
+    "restoreError": "Gagal memulihkan backup",
+    "cloudRestoreSuccess": "Berhasil dipulihkan dari cloud!",
+    "cloudRestoreError": "Gagal pulihkan dari cloud",
+    "cloudLoadError": "Gagal memuat daftar backup",
+    "saveFailed": "Gagal menyimpan data toko"
   },
   "language": {
-    "title": "Pilih Bahasa",
-    "subtitle": "Pilih bahasa yang kamu inginkan"
+    "title": "Pilih Bahasa"
   }
 }
