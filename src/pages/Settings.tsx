@@ -25,6 +25,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { getLicenseStatus, getTrialDaysLeft, validateLicenseKey } from '@/lib/license';
 import { ProGate } from '@/components/ProGate';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 export default function Pengaturan() {
   const { t } = useTranslation('settings');
@@ -169,6 +170,11 @@ export default function Pengaturan() {
 
   // Storage info (CR-9)
   const [storageUsage, setStorageUsage] = useState<{ usage: number; quota: number } | null>(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW();
   useEffect(() => {
     if (navigator.storage?.estimate) {
       navigator.storage.estimate().then(est => {
@@ -296,6 +302,30 @@ export default function Pengaturan() {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  };
+
+  const handleCheckUpdate = async () => {
+    if (isNative || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    setCheckingUpdate(true);
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      await registration?.update();
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      toast.success(needRefresh ? t('about.updateAvailable') : t('about.updateChecked'));
+    } catch {
+      toast.error(t('about.updateFailed'));
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
+  const handleReloadApp = async () => {
+    if (isNative) return;
+    if (needRefresh) {
+      await updateServiceWorker(true);
+      return;
+    }
+    window.location.reload();
   };
 
   // Status kartu Cloud Sync di Settings.
@@ -790,6 +820,16 @@ export default function Pengaturan() {
            <p className="text-sm font-bold">INSPIRA POS</p>
            <p className="text-xs text-muted-foreground">Smart POS untuk UMKM Indonesia 🇮🇩</p>
            <p className="text-[10px] text-muted-foreground">{t('about.version', { version: APP_VERSION })}</p>
+           {!isNative && (
+             <div className="pt-2 w-full flex gap-2">
+               <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={handleCheckUpdate} disabled={checkingUpdate}>
+                 {checkingUpdate ? t('common:common.loading') : t('about.checkUpdate')}
+               </Button>
+               <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleReloadApp}>
+                 {t('about.reloadNow')}
+               </Button>
+             </div>
+           )}
             <p className="text-[10px] text-muted-foreground">
               Powered by{' '}
               <a href="https://inspiralabs.id/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">

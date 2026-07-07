@@ -3,10 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import * as Tabs from '@radix-ui/react-tabs';
 import { 
   Check, 
-  Search, 
   Sparkles, 
   Smartphone, 
   Printer, 
@@ -22,29 +20,6 @@ import {
   Info,
   BadgePercent
 } from 'lucide-react';
-
-const ADD_ONS_DATA = [
-  // UMKM Lite
-  { id: 1, name: "Role tambahan", price: "Rp 49.000/bln", desc: "Tambah hak akses khusus untuk peran staff tambahan di luar batas paket.", category: "fitur", plan: "lite" },
-  { id: 2, name: "Dashboard stok real-time", price: "Rp 99.000/bln", desc: "Pantau pergerakan inventaris dan stok barang secara langsung dari mana saja.", category: "dashboard", plan: "lite" },
-  { id: 3, name: "Food cost per menu (HPP otomatis)", price: "Rp 99.000/bln", desc: "Kalkulasi HPP otomatis per menu berdasarkan bahan baku yang digunakan.", category: "dashboard", plan: "lite" },
-  { id: 4, name: "QR Self-Order", price: "Rp 109.000/bln", desc: "Pelanggan bisa memesan dan bayar langsung di meja dengan scan kode QR.", category: "operasional", plan: "lite" },
-  { id: 5, name: "WA Broadcast promo ke pelanggan", price: "Rp 199.000/bln", desc: "Kirim pesan promosi massal secara personal ke nomor WhatsApp pelanggan Anda.", category: "fitur", plan: "lite" },
-  { id: 7, name: "KDS Dapur", price: "Rp 149.000/bln", desc: "Kitchen Display System untuk menampilkan antrean pesanan di area dapur secara digital.", category: "operasional", plan: "lite" },
-  { id: 8, name: "Loyalty program (Membership)", price: "Rp 149.000/bln", desc: "Sistem poin dan reward belanja untuk meningkatkan retensi kunjungan pelanggan.", category: "fitur", plan: "lite" },
-  { id: 9, name: "Outlet tambahan", price: "Rp 299.000/outlet/bln", desc: "Tambah cabang/outlet baru untuk dikelola dalam satu sistem terintegrasi.", category: "operasional", plan: "lite" },
-  { id: 10, name: "Dashboard keuangan (P&L, arus kas)", price: "Rp 299.000/bln", desc: "Analisis rugi laba (Profit & Loss) dan laporan arus kas bisnis secara mendalam.", category: "dashboard", plan: "lite" },
-  { id: 11, name: "Training kasir on-site (per sesi 2 jam)", price: "Hubungi Sales", desc: "Pelatihan karyawan kasir langsung di lokasi usaha Anda oleh tim ahli kami.", category: "operasional", plan: "lite" },
-  { id: 12, name: "Inter-branch transfer", price: "Rp 499.000/bln", desc: "Kirim dan mutasi stok inventaris antar cabang dengan pencatatan yang rapi.", category: "operasional", plan: "lite" },
-  { id: 13, name: "Absensi karyawan", price: "Rp 499.000/bln", desc: "Pencatatan kehadiran karyawan kasir langsung di tablet kasir.", category: "operasional", plan: "lite" },
-
-  // UMKM Pro
-  { id: 101, name: "Role tambahan", price: "Rp 109.000/bln", desc: "Tambah hak akses khusus untuk peran staff tambahan di luar batas paket.", category: "fitur", plan: "pro" },
-  { id: 103, name: "Outlet tambahan", price: "Rp 299.000/outlet/bln", desc: "Tambah cabang/outlet baru untuk dikelola dalam satu sistem terintegrasi.", category: "operasional", plan: "pro" },
-  { id: 104, name: "Ingredient Tracking BOM", price: "Rp 299.000/outlet/bln", desc: "Pelacakan stok bahan baku (Bill of Materials) yang terpotong otomatis saat terjual.", category: "operasional", plan: "pro" },
-  { id: 105, name: "Advanced analytics dashboard", price: "Rp 399.000/bln", desc: "Dashboard analisis bisnis cerdas dengan prediksi performa dan tren penjualan.", category: "dashboard", plan: "pro" },
-  { id: 106, name: "Inter-branch transfer", price: "Rp 499.000/bln", desc: "Kirim dan mutasi stok inventaris antar cabang dengan pencatatan yang rapi.", category: "operasional", plan: "pro" },
-];
 
 const FAQS_DATA = [
   { q: "Apa itu Lisensi Beli Putus?", a: "Lisensi Beli Putus adalah skema pembayaran sekali di depan. Dengan lisensi ini, Anda bisa menggunakan aplikasi secara offline selamanya tanpa biaya berlangganan bulanan." },
@@ -115,11 +90,6 @@ export default function LandingPage() {
     }
   }, [navigate]);
 
-  // Jangan render apapun saat akan redirect supaya tidak ada flash landing page
-  if (isRedirecting.current) return null;
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'fitur' | 'dashboard' | 'operasional'>('all');
-  const [addonPlan, setAddonPlan] = useState<'lite' | 'pro'>('lite');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(1); // FAQ 'Bisa tanpa internet?' dibuka secara default
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -131,7 +101,7 @@ export default function LandingPage() {
   const [typingSpeed, setTypingSpeed] = useState(150);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     const handleTyping = () => {
       const fullWord = words[currentWordIndex];
       if (!isDeleting) {
@@ -163,17 +133,6 @@ export default function LandingPage() {
     return () => clearTimeout(timer);
   }, [currentText, isDeleting, currentWordIndex, typingSpeed, words]);
 
-  // Filtering add-ons
-  const filteredAddOns = useMemo(() => {
-    return ADD_ONS_DATA.filter(addon => {
-      const matchesPlan = (addon as any).plan === addonPlan;
-      const matchesSearch = addon.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            addon.desc.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || addon.category === selectedCategory;
-      return matchesPlan && matchesSearch && matchesCategory;
-    });
-  }, [addonPlan, searchQuery, selectedCategory]);
-
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
@@ -185,6 +144,9 @@ export default function LandingPage() {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // Jangan render apapun saat akan redirect supaya tidak ada flash landing page
+  if (isRedirecting.current) return null;
 
   return (
     <div className="min-h-screen bg-[#F5EFE6] text-[#1A1A1A] font-sans antialiased selection:bg-[#6e150f]/10 selection:text-[#6e150f]">
@@ -206,7 +168,6 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-[#1A1A1A]">
             <button onClick={() => scrollToSection('features')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">Fitur</button>
             <button onClick={() => scrollToSection('pricing')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">Harga</button>
-            <button onClick={() => scrollToSection('addons')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">Add-ons</button>
             <button onClick={() => scrollToSection('faq')} className="hover:text-[#b92a1c] hover:underline underline-offset-4 transition-all">FAQ</button>
           </nav>
 
@@ -239,7 +200,6 @@ export default function LandingPage() {
             >
               <button onClick={() => scrollToSection('features')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">Fitur</button>
               <button onClick={() => scrollToSection('pricing')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">Harga</button>
-              <button onClick={() => scrollToSection('addons')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">Add-ons</button>
               <button onClick={() => scrollToSection('faq')} className="text-left py-2 font-semibold hover:text-[#b92a1c]">FAQ</button>
               <hr className="border-[#6e150f]/10" />
               <Link 
@@ -485,7 +445,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Laporan Harian &amp; Grafik 7 Hari</span>
+                  <span>Laporan Harian, 7 Hari, &amp; 30 Hari</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -494,6 +454,10 @@ export default function LandingPage() {
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                   <span>1 Pengguna (Pemilik Toko)</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <span>Ekspor Laporan PDF &amp; Excel</span>
                 </li>
                 <li className="flex items-start gap-2.5 text-muted-foreground/60">
                   <X className="w-5 h-5 text-red-500/60 flex-shrink-0 mt-0.5" />
@@ -506,10 +470,6 @@ export default function LandingPage() {
                 <li className="flex items-start gap-2.5 text-muted-foreground/60">
                   <X className="w-5 h-5 text-red-500/60 flex-shrink-0 mt-0.5" />
                   <span>Pencatatan Pengeluaran Toko <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded ml-1">PRO</span></span>
-                </li>
-                <li className="flex items-start gap-2.5 text-muted-foreground/60">
-                  <X className="w-5 h-5 text-red-500/60 flex-shrink-0 mt-0.5" />
-                  <span>Ekspor Laporan PDF &amp; Excel <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded ml-1">PRO</span></span>
                 </li>
               </ul>
 
@@ -592,7 +552,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span>Laporan per Kasir / Shift</span>
+                  <span className="font-semibold text-emerald-700">Laporan per Kasir / Shift</span>
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -600,7 +560,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <span className="font-semibold text-emerald-700">Ekspor Laporan ke PDF &amp; Excel</span>
+                  <span>Ekspor Laporan ke PDF &amp; Excel</span>
                 </li>
               </ul>
 
@@ -683,146 +643,22 @@ export default function LandingPage() {
                   <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
                 </tr>
                 <tr>
+                  <td className="py-3.5 px-4 font-medium">Grafik Penjualan 30 Hari</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
+                </tr>
+                <tr>
                   <td className="py-3.5 px-4 font-medium">Laporan Laba Rugi (P&amp;L)</td>
                   <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
                   <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium">Ekspor Laporan PDF &amp; Excel</td>
-                  <td className="py-3.5 px-4 text-center text-red-500 font-bold">❌</td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
                   <td className="py-3.5 px-4 text-center text-emerald-600 font-bold">✅</td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
-      </section>
-
-      {/* Add-ons Section (Interactive Grid with search and category filter) */}
-      <section id="addons" className="py-20 bg-white border-y border-[#6e150f]/5">
-        <div className="max-w-6xl mx-auto px-4 md:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-3">
-            <h2 className="text-3xl font-extrabold tracking-tight text-[#6e150f]">
-              Modul Tambahan (Add-ons) Fleksibel
-            </h2>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Pilih paket Anda di bawah ini untuk melihat modul tambahan yang tersedia.
-            </p>
-          </div>
-
-          {/* Plan Selector */}
-          <Tabs.Root 
-            value={addonPlan} 
-            onValueChange={(val) => { 
-              setAddonPlan(val as 'lite' | 'pro'); 
-              setSelectedCategory('all'); 
-            }}
-            className="flex justify-center mb-8"
-          >
-            <Tabs.List className="inline-flex p-1 rounded-full bg-[#6e150f]/5 border border-[#6e150f]/10">
-              <Tabs.Trigger 
-                value="lite"
-                className={`px-5 py-2 rounded-full text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
-                  addonPlan === 'lite' ? 'bg-[#6e150f] text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
-                }`}
-              >
-                Add-Ons UMKM Lite
-              </Tabs.Trigger>
-              <Tabs.Trigger 
-                value="pro"
-                className={`px-5 py-2 rounded-full text-xs font-bold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#6e150f]/20 ${
-                  addonPlan === 'pro' ? 'bg-[#6e150f] text-[#F5EFE6]' : 'text-[#1A1A1A] hover:text-[#b92a1c]'
-                }`}
-              >
-                Add-Ons UMKM Pro
-              </Tabs.Trigger>
-            </Tabs.List>
-          </Tabs.Root>
-
-          {/* Search bar and Category filter tabs */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-[#6e150f]/10">
-            <div className="flex flex-wrap gap-2">
-              {(['all', 'fitur', 'dashboard', 'operasional'] as const).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold capitalize transition-colors ${
-                    selectedCategory === cat
-                      ? 'bg-[#6e150f] text-[#F5EFE6]'
-                      : 'text-[#1A1A1A] hover:text-[#b92a1c]'
-                  }`}
-                >
-                  {cat === 'all' ? 'Semua Modul' : cat}
-                </button>
-              ))}
-            </div>
-
-            <div className="relative w-full md:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari modul tambahan..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-[#F5EFE6]/50 border border-[#6e150f]/10 focus:outline-none focus:ring-2 focus:ring-[#6e150f]/20 focus:border-[#6e150f] transition-colors"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Batal
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAddOns.length > 0 ? (
-              filteredAddOns.map((addon) => (
-                <div
-                  key={addon.id}
-                  className="flex flex-col p-6 rounded-2xl bg-[#F5EFE6]/30 border border-[#6e150f]/5 hover:border-[#6e150f]/20 hover:bg-white transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-extrabold text-[#d0a139] uppercase tracking-wider bg-[#d0a139]/10 px-2 py-0.5 rounded-full">
-                      {addon.category}
-                    </span>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
-                      addon.price === "Hubungi Sales" 
-                        ? 'bg-emerald-600/10 text-emerald-600' 
-                        : 'bg-[#6e150f]/10 text-[#6e150f]'
-                    }`}>
-                      {addon.price}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-[#1A1A1A] mb-1.5">{addon.name}</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                    {addon.desc}
-                  </p>
-                  {addon.price === "Hubungi Sales" && (
-                    <button
-                      onClick={() => {
-                        const waNumber = '6282124533265';
-                        const message = encodeURIComponent(
-                          `Halo Admin Inspira POS, saya tertarik dan ingin bertanya lebih lanjut mengenai Add-on "${addon.name}" untuk paket UMKM ${addonPlan === 'lite' ? 'Lite' : 'Pro'}.`
-                        );
-                        window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
-                      }}
-                      className="mt-4 w-full py-2 px-4 rounded-xl text-xs font-bold bg-[#25D366] hover:bg-[#20BA5A] text-white transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      Hubungi Sales via WA
-                    </button>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12 text-muted-foreground flex flex-col items-center justify-center gap-2">
-                <Search className="w-8 h-8 text-[#6e150f]/20" />
-                <p className="text-sm font-semibold">Modul tidak ditemukan</p>
-                <p className="text-xs">Coba cari dengan kata kunci lain atau bersihkan filter.</p>
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -952,7 +788,6 @@ export default function LandingPage() {
               <li><button onClick={() => scrollToSection('hero')} className="hover:text-white transition-colors">Beranda</button></li>
               <li><button onClick={() => scrollToSection('features')} className="hover:text-white transition-colors">Fitur Utama</button></li>
               <li><button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors">Paket Harga</button></li>
-              <li><button onClick={() => scrollToSection('addons')} className="hover:text-white transition-colors">Modul Add-ons</button></li>
             </ul>
           </div>
           <div>
