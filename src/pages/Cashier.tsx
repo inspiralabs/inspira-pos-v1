@@ -1073,8 +1073,8 @@ export default function Kasir() {
         ) : (
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="flex-1 overflow-y-auto space-y-3 p-4">
-              {cart.map(item => (
-                <div key={item.product.id} className="bg-muted/50 p-3 rounded-xl space-y-1.5">
+              {cart.map((item, idx) => (
+                <div key={`${item.product.id}-${idx}`} className="bg-muted/50 p-3 rounded-xl space-y-1.5">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{item.product.name}</p>
@@ -1309,12 +1309,21 @@ export default function Kasir() {
           </SheetHeader>
           <div className="flex flex-col h-full mt-4">
             <div className="flex-1 overflow-y-auto space-y-3 pb-4">
-              {cart.map(item => (
-                <div key={item.product.id} className="bg-muted/50 p-3 rounded-xl space-y-1.5">
+              {cart.map((item, idx) => (
+                <div key={`${item.product.id}-${idx}`} className="bg-muted/50 p-3 rounded-xl space-y-1.5">
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{item.product.name}</p>
-                      <p className="text-xs text-muted-foreground">{rp(item.product.price)} × {item.qty}</p>
+                      <p className="text-xs text-muted-foreground">{rp(getItemBasePrice(item))} × {item.qty}</p>
+                      {item.selectedOptions && item.selectedOptions.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.selectedOptions.map((opt, i) => (
+                            <span key={`${opt.optionId}-${i}`} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                              {opt.optionName}{(opt.quantity ?? 1) > 1 ? ` ×${opt.quantity}` : ''}{opt.additionalPrice > 0 ? ` +${rp(opt.additionalPrice * (opt.quantity ?? 1))}` : ''}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {item.discountType && getItemDiscountAmount(item) > 0 && (
                         <p className="text-[10px] text-destructive">
                           {t('cashier.cartDiscount.label')}: {item.discountType === 'percentage' ? `${item.discountValue}%` : rp(item.discountValue)} (-{rp(getItemDiscountAmount(item))})
