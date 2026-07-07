@@ -945,6 +945,32 @@ export function uniquifyProductSkus<T extends Pick<Product, 'sku'>>(
   });
 }
 
+/** Nomor struk unik untuk transaksi baru (hindari tabrakan index &receiptNumber). */
+export function nextReceiptNumber(prefix = 'TX'): string {
+  return `${prefix}${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
+/** Pastikan receiptNumber unik sebelum bulkAdd (restore / import). */
+export function uniquifyReceiptNumbers<T extends { receiptNumber?: string }>(
+  transactions: T[],
+  existing: Iterable<string> = [],
+): T[] {
+  const seen = new Set([...existing].map((s) => s.trim()).filter(Boolean));
+  return transactions.map((t, i) => {
+    let receiptNumber = (t.receiptNumber ?? '').trim();
+    if (!receiptNumber) receiptNumber = nextReceiptNumber('TX-IMP-');
+    if (!seen.has(receiptNumber)) {
+      seen.add(receiptNumber);
+      return receiptNumber === t.receiptNumber ? t : { ...t, receiptNumber };
+    }
+    let n = 1;
+    while (seen.has(`${receiptNumber}_dup${n}`)) n++;
+    const unique = `${receiptNumber}_dup${n}`;
+    seen.add(unique);
+    return { ...t, receiptNumber: unique };
+  });
+}
+
 export async function deleteTransactionItemsWithOptions(transactionId: number): Promise<void> {
   const oldItems = await db.transactionItems.where('transactionId').equals(transactionId).toArray();
   const itemIds = oldItems.map((i) => i.id!).filter(Boolean);

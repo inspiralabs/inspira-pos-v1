@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { db, type Product, uniquifyProductSkus } from '@/lib/db';
+import { db, type Product, uniquifyProductSkus, uniquifyReceiptNumbers } from '@/lib/db';
 import { TRIAL_LIMITS } from '@/lib/trial-limits';
 import { UMKM_TYPES, seedUmkmDummy, type UmkmTypeId } from '@/lib/umkm-dummy-data';
 import { cn } from '@/lib/utils';
@@ -156,7 +156,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         if (data.stockOuts?.length) await db.stockOuts.bulkAdd(data.stockOuts);
         if (data.hppHistory?.length) await db.hppHistory.bulkAdd(data.hppHistory);
         if (data.paymentMethods?.length) await db.paymentMethods.bulkAdd(data.paymentMethods);
-        if (data.transactions?.length) await db.transactions.bulkAdd(data.transactions);
+        if (data.transactions?.length) {
+          await db.transactions.bulkAdd(uniquifyReceiptNumbers(data.transactions));
+        }
         if (data.users?.length) await db.users.bulkAdd(data.users);
         if (data.expenseCategories?.length) await db.expenseCategories.bulkAdd(data.expenseCategories);
         if (data.expenses?.length) await db.expenses.bulkAdd(data.expenses);

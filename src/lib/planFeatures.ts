@@ -18,11 +18,11 @@ export const PLAN_FEATURES: Record<PlanTier, Record<string, boolean>> = {
     // Pengeluaran
     expense_tracking: false,
     // Laporan
-    report_30_days: false,
+    report_30_days: true,
     report_per_cashier: false,
     profit_loss_report: false,
-    export_pdf: false,
-    export_excel: false,
+    export_pdf: true,
+    export_excel: true,
   },
   PRO: {
     // Transaksi

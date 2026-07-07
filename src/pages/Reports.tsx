@@ -17,6 +17,7 @@ import { isNativePlatform, printRawNativeBluetooth, getDailyReportESCPOSData, ty
 import DailyReportReceipt from '@/components/reports/DailyReportReceipt';
 import { useTranslation } from 'react-i18next';
 import { ProGate } from '@/components/ProGate';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
 
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -34,7 +35,12 @@ export default function Laporan() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportData, setReportData] = useState<DailyReportPrintData | null>(null);
+  const canSee30Days = useFeatureFlag('report_30_days');
   const days = period === 'daily' ? 1 : Number(period);
+
+  useEffect(() => {
+    if (period === '30' && !canSee30Days) setPeriod('7');
+  }, [period, canSee30Days]);
 
   const dateRange = (() => {
     if (period === 'daily') {
@@ -52,9 +58,10 @@ export default function Laporan() {
 
   const txItems = useLiveQuery(async () => {
     if (!transactions || transactions.length === 0) return [];
-    const txIds = transactions.map(t => t.id!).filter(Boolean);
+    const txIds = transactions.map(t => t.id).filter((id): id is number => id != null);
+    if (txIds.length === 0) return [];
     return db.transactionItems.where('transactionId').anyOf(txIds).toArray();
-  }, [transactions]);
+  }, [transactions?.length, transactions?.map((t) => t.id).join(',')]);
 
   const expenses = useLiveQuery(async () => {
     const all = await db.expenses.where('date').between(dateRange.start, dateRange.end, true, true).toArray();
@@ -247,7 +254,11 @@ export default function Laporan() {
         <TabsList className="w-full">
           <TabsTrigger value="daily" className="flex-1">{t('tabs.daily')}</TabsTrigger>
           <TabsTrigger value="7" className="flex-1">{t('tabs.7days')}</TabsTrigger>
-          <TabsTrigger value="30" className="flex-1">{t('tabs.30days')}</TabsTrigger>
+          <div className="flex-1 flex">
+            <ProGate featureKey="report_30_days">
+              <TabsTrigger value="30" className="w-full h-full">{t('tabs.30days')}</TabsTrigger>
+            </ProGate>
+          </div>
         </TabsList>
       </Tabs>
 
@@ -287,7 +298,7 @@ export default function Laporan() {
         </Card>
       )}
 
-      {(period === '7' || period === '30') && (
+      {(period === '7' || (period === '30' && canSee30Days)) && (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">

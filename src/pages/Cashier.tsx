@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, isStockManaged, type Product, type Category, type Transaction, type ReceiptItem, type ProductOptionGroup, type ProductOption, bulkAddTransactionItemsWithOptions, deleteTransactionItemsWithOptions, type SaveCartItemInput } from '@/lib/db';
+import { db, isStockManaged, type Product, type Category, type Transaction, type ReceiptItem, type ProductOptionGroup, type ProductOption, bulkAddTransactionItemsWithOptions, deleteTransactionItemsWithOptions, type SaveCartItemInput, nextReceiptNumber } from '@/lib/db';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check, Package as PackageIcon, ClipboardList, Save, Pencil, User, Hash, Trash2, ListPlus } from 'lucide-react';
 import Receipt from '@/components/Receipt';
@@ -523,7 +523,7 @@ export default function Kasir() {
       const updatedTx = await db.transactions.get(editingTxId);
       toast.success(t('cashier.toast.billUpdated', { receiptNumber: updatedTx?.receiptNumber }));
     } else {
-      const receiptNumber = `TX${Date.now()}`;
+      const receiptNumber = nextReceiptNumber();
 
       const txData: Transaction = {
         subtotal,
@@ -652,7 +652,7 @@ export default function Kasir() {
 
     if (splitPartCheckoutIndex !== null) {
       // 1. Bagi Rata Mode: Save the split portion
-      const receiptNumber = `TX-SPLIT-${Date.now()}`;
+      const receiptNumber = nextReceiptNumber('TX-SPLIT-');
       const txData: Transaction = {
         subtotal: activeCheckoutTotal,
         discountType: null,
@@ -729,7 +729,7 @@ export default function Kasir() {
 
     if (splitCart !== null) {
       // 2. Per Item Mode: Save the split items
-      const receiptNumber = `TX-ITEM-${Date.now()}`;
+      const receiptNumber = nextReceiptNumber('TX-ITEM-');
       const splitProfit = splitCart.reduce((sum, item) => sum + (item.product.price - item.product.hpp) * item.qty, 0) - splitCart.reduce((sum, item) => sum + getItemDiscountAmount(item), 0);
       
       const txData: Transaction = {
@@ -877,7 +877,7 @@ export default function Kasir() {
       setLastTxItems(savedItems);
       setReceiptOpen(true);
     } else {
-      const receiptNumber = `TX${Date.now()}`;
+      const receiptNumber = nextReceiptNumber();
 
       const txData: Transaction = {
         subtotal,

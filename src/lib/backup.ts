@@ -1,4 +1,4 @@
-import { db, type Product, uniquifyProductSkus } from '@/lib/db';
+import { db, type Product, uniquifyProductSkus, uniquifyReceiptNumbers } from '@/lib/db';
 
 /**
  * Shared backup/restore core, dipakai oleh:
@@ -178,7 +178,9 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
     if (data.stockOuts?.length) await db.stockOuts.bulkAdd(data.stockOuts);
     if (data.hppHistory?.length) await db.hppHistory.bulkAdd(data.hppHistory);
     if (data.paymentMethods?.length) await db.paymentMethods.bulkAdd(data.paymentMethods);
-    if (data.transactions?.length) await db.transactions.bulkAdd(data.transactions);
+    if (data.transactions?.length) {
+      await db.transactions.bulkAdd(uniquifyReceiptNumbers(data.transactions));
+    }
     if (data.storeSettings?.length) await db.storeSettings.bulkAdd(data.storeSettings);
     if (data.users?.length) await db.users.bulkAdd(data.users);
     if (data.expenseCategories?.length) await db.expenseCategories.bulkAdd(data.expenseCategories);
@@ -272,7 +274,9 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
       if (snapshot.stockOuts.length) await db.stockOuts.bulkAdd(snapshot.stockOuts);
       if (snapshot.hppHistory.length) await db.hppHistory.bulkAdd(snapshot.hppHistory);
       if (snapshot.paymentMethods.length) await db.paymentMethods.bulkAdd(snapshot.paymentMethods);
-      if (snapshot.transactions.length) await db.transactions.bulkAdd(snapshot.transactions);
+      if (snapshot.transactions.length) {
+        await db.transactions.bulkAdd(uniquifyReceiptNumbers(snapshot.transactions));
+      }
       if (snapshot.transactionItems.length) await db.transactionItems.bulkAdd(snapshot.transactionItems);
       if (snapshot.transactionItemOptions?.length) await db.transactionItemOptions.bulkAdd(snapshot.transactionItemOptions);
       if (snapshot.storeSettings.length) await db.storeSettings.bulkAdd(snapshot.storeSettings);

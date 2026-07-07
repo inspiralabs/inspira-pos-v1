@@ -202,7 +202,10 @@ export async function seedUmkmDummy(typeId: UmkmTypeId): Promise<void> {
   const t = now();
 
   const demoSkus = products.map((p) => p.sku);
-  const alreadySeeded = await db.products.where('sku').anyOf(demoSkus).first();
+  const demoReceiptProbe = `TX-DEMO-${typeId}-001`;
+  const alreadySeeded =
+    (await db.products.where('sku').anyOf(demoSkus).first()) ||
+    (await db.transactions.where('receiptNumber').equals(demoReceiptProbe).first());
   if (alreadySeeded) return;
 
   await ensureUnits([...new Set(products.map((p) => p.unit))]);
@@ -254,7 +257,8 @@ export async function seedUmkmDummy(typeId: UmkmTypeId): Promise<void> {
       change: 0,
       profit,
       date: new Date(t.getTime() - tx.hoursAgo * 3600000),
-      receiptNumber: tx.receiptNumber,
+      receiptNumber: tx.receiptNumber.replace('TX-DEMO-', `TX-DEMO-${typeId}-`),
+      status: 'completed',
     });
     await db.transactionItems.bulkAdd(
       items.map((i) => ({

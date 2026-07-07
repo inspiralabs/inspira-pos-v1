@@ -46,27 +46,27 @@ export default function Dashboard() {
     return all.filter(e => e.isDeleted === 0);
   }, []);
 
-  const recentTransactions = useLiveQuery(() =>
-    db.transactions.orderBy('date').reverse().limit(5).toArray()
-  );
-
-  // Query items for recent transactions
-  const recentTxItems = useLiveQuery(async () => {
-    if (!recentTransactions || recentTransactions.length === 0) return {};
-    const txIds = recentTransactions.map(t => t.id!).filter(Boolean);
-    const items = await db.transactionItems.where('transactionId').anyOf(txIds).toArray();
-    const map: Record<number, TransactionItemRecord[]> = {};
-    for (const item of items) {
-      if (!map[item.transactionId]) map[item.transactionId] = [];
-      map[item.transactionId].push(item);
+  const recentActivity = useLiveQuery(async () => {
+    const transactions = await db.transactions.orderBy('date').reverse().limit(5).toArray();
+    const txIds = transactions.map((t) => t.id).filter((id): id is number => id != null);
+    const itemsByTx: Record<number, TransactionItemRecord[]> = {};
+    if (txIds.length > 0) {
+      const items = await db.transactionItems.where('transactionId').anyOf(txIds).toArray();
+      for (const item of items) {
+        if (!itemsByTx[item.transactionId]) itemsByTx[item.transactionId] = [];
+        itemsByTx[item.transactionId].push(item);
+      }
     }
-    return map;
-  }, [recentTransactions]);
+    return { transactions, itemsByTx };
+  }, []);
+
+  const recentTransactions = recentActivity?.transactions;
+  const recentTxItems = recentActivity?.itemsByTx;
 
   const paymentMethods = useLiveQuery(() => db.paymentMethods.toArray());
 
   // Show onboarding if not done yet
-  if (storeSettings === undefined) return null; // loading
+  if (storeSettings === undefined || recentActivity === undefined) return null; // loading
 
   const totalSales = todayTransactions?.reduce((sum, t) => sum + t.total, 0) ?? 0;
   const totalProfit = todayTransactions?.reduce((sum, t) => sum + t.profit, 0) ?? 0;
