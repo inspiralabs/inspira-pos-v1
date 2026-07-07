@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, type Transaction, type TransactionItemRecord } from '@/lib/db';
+import { db, type Transaction, type ReceiptItem, deleteTransactionItemsWithOptions } from '@/lib/db';
 import { useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { id as idLocale, enUS, ms } from 'date-fns/locale';
@@ -50,16 +50,32 @@ export default function TransactionHistory() {
 
   // Query all transaction items and build lookup map
   const txItemsMap = useLiveQuery(async () => {
-    const items = await db.transactionItems.toArray();
-    const map: Record<number, TransactionItemRecord[]> = {};
+    const [items, opts] = await Promise.all([
+      db.transactionItems.toArray(),
+      db.transactionItemOptions.toArray(),
+    ]);
+    const optsByItem = new Map<number, ReceiptItem['options']>();
+    for (const o of opts) {
+      const arr = optsByItem.get(o.transactionItemId) ?? [];
+      arr.push({
+        optionGroupName: o.optionGroupName,
+        optionName: o.optionName,
+        additionalPrice: o.additionalPrice,
+      });
+      optsByItem.set(o.transactionItemId, arr);
+    }
+    const map: Record<number, ReceiptItem[]> = {};
     for (const item of items) {
       if (!map[item.transactionId]) map[item.transactionId] = [];
-      map[item.transactionId].push(item);
+      map[item.transactionId].push({
+        ...item,
+        options: item.id ? optsByItem.get(item.id) : undefined,
+      });
     }
     return map;
   });
 
-  const getTxItems = (txId: number | undefined): TransactionItemRecord[] =>
+  const getTxItems = (txId: number | undefined): ReceiptItem[] =>
     txId ? (txItemsMap?.[txId] ?? []) : [];
   const paymentMethods = useLiveQuery(() => db.paymentMethods.toArray());
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
@@ -168,7 +184,7 @@ export default function TransactionHistory() {
           }
         }
       }
-      await db.transactionItems.where('transactionId').equals(selectedTx.id).delete();
+      await deleteTransactionItemsWithOptions(selectedTx.id);
       await db.transactions.delete(selectedTx.id);
       setDeleteDialogOpen(false);
       setDetailOpen(false);
@@ -439,6 +455,11 @@ export default function TransactionHistory() {
                         {t('transactionHistory.detail.quantityFormat', { qty: item.quantity, price: rp(item.price) })}
                         {item.discountAmount > 0 && ` (${t('transactionHistory.detail.discount', { amount: rp(item.discountAmount) })})`}
                       </p>
+                      {item.options?.map((opt, oi) => (
+                        <p key={oi} className="text-[10px] text-primary mt-0.5">
+                          ↳ {opt.optionGroupName}: {opt.optionName}
+                        </p>
+                      ))}
                       {item.notes && (
                         <p className="text-[10px] text-accent mt-0.5">📝 {item.notes}</p>
                       )}

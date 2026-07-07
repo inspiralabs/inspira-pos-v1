@@ -226,6 +226,31 @@ export interface TransactionItemRecord {
   notes?: string;
 }
 
+export type ReceiptItem = TransactionItemRecord & {
+  options?: Pick<TransactionItemOption, 'optionGroupName' | 'optionName' | 'additionalPrice'>[];
+};
+
+export type SaveCartItemInput = {
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  hpp: number;
+  discountType: 'percentage' | 'nominal' | null;
+  discountValue: number;
+  discountAmount: number;
+  subtotal: number;
+  notes?: string;
+  selectedOptions?: Array<{
+    groupId: number;
+    groupName: string;
+    optionId: number;
+    optionName: string;
+    additionalPrice: number;
+    quantity: number;
+  }>;
+};
+
 export interface Unit {
   id?: number;
   name: string; // satuan: pcs, kg, liter, dll
@@ -918,6 +943,79 @@ export function uniquifyProductSkus<T extends Pick<Product, 'sku'>>(
     seen.add(unique);
     return { ...p, sku: unique };
   });
+}
+
+export async function deleteTransactionItemsWithOptions(transactionId: number): Promise<void> {
+  const oldItems = await db.transactionItems.where('transactionId').equals(transactionId).toArray();
+  const itemIds = oldItems.map((i) => i.id!).filter(Boolean);
+  if (itemIds.length) {
+    await db.transactionItemOptions.where('transactionItemId').anyOf(itemIds).delete();
+  }
+  await db.transactionItems.where('transactionId').equals(transactionId).delete();
+}
+
+export async function bulkAddTransactionItemsWithOptions(
+  transactionId: number,
+  items: SaveCartItemInput[],
+): Promise<ReceiptItem[]> {
+  const records: TransactionItemRecord[] = items.map((c) => ({
+    transactionId,
+    productId: c.productId,
+    productName: c.productName,
+    quantity: c.quantity,
+    price: c.unitPrice,
+    hpp: c.hpp,
+    discountType: c.discountType,
+    discountValue: c.discountValue,
+    discountAmount: c.discountAmount,
+    subtotal: c.subtotal,
+    notes: c.notes,
+  }));
+  const ids = (await db.transactionItems.bulkAdd(records, { allKeys: true })) as number[];
+  const optionRows: TransactionItemOption[] = [];
+  items.forEach((c, idx) => {
+    const itemId = ids[idx];
+    for (const opt of c.selectedOptions ?? []) {
+      optionRows.push({
+        transactionItemId: itemId,
+        optionGroupId: opt.groupId,
+        optionGroupName: opt.groupName,
+        optionId: opt.optionId,
+        optionName: opt.quantity > 1 ? `${opt.optionName} x${opt.quantity}` : opt.optionName,
+        additionalPrice: opt.additionalPrice * opt.quantity,
+      });
+    }
+  });
+  if (optionRows.length) await db.transactionItemOptions.bulkAdd(optionRows);
+
+  return records.map((r, i) => ({
+    ...r,
+    id: ids[i],
+    options: (items[i].selectedOptions ?? []).map((o) => ({
+      optionGroupName: o.groupName,
+      optionName: o.quantity > 1 ? `${o.optionName} x${o.quantity}` : o.optionName,
+      additionalPrice: o.additionalPrice * o.quantity,
+    })),
+  }));
+}
+
+export async function loadReceiptItems(transactionId: number): Promise<ReceiptItem[]> {
+  const items = await db.transactionItems.where('transactionId').equals(transactionId).toArray();
+  const itemIds = items.map((i) => i.id!).filter(Boolean);
+  const opts = itemIds.length
+    ? await db.transactionItemOptions.where('transactionItemId').anyOf(itemIds).toArray()
+    : [];
+  const byItem = new Map<number, ReceiptItem['options']>();
+  for (const o of opts) {
+    const arr = byItem.get(o.transactionItemId) ?? [];
+    arr.push({
+      optionGroupName: o.optionGroupName,
+      optionName: o.optionName,
+      additionalPrice: o.additionalPrice,
+    });
+    byItem.set(o.transactionItemId, arr);
+  }
+  return items.map((item) => ({ ...item, options: byItem.get(item.id!) }));
 }
 
 // Seed default data

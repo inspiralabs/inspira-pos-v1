@@ -160,7 +160,7 @@ export default function DailyReportReceipt({ open, onClose, data }: DailyReportR
           {/* Report Title */}
           <div className="text-center font-bold text-xs my-1">
             <p>{t('dailyReceipt.reportTitle')}</p>
-            <p>{data.dateStr}</p>
+            <p>{data.periodLabel ?? data.dateStr}</p>
           </div>
 
           <div className="border-t border-dashed border-gray-400 my-2" />

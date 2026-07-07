@@ -17,6 +17,10 @@
     "printClosingReport": "Cetak Laporan Penutup",
     "noSalesSelectedDate": "* Tiada transaksi jualan pada tarikh terpilih"
   },
+  "periodClosing": {
+    "print": "Cetak Laporan Penutup {{period}}",
+    "noSales": "* Tiada transaksi jualan pada tempoh ini"
+  },
   "summary": {
     "transactions": "Transaksi",
     "sales": "Jualan",
@@ -65,17 +69,19 @@
   },
   "currency": "Rp {{amount}}",
   "exportDialog": {
-    "title": "Export Laporan ke Excel",
-    "description": "Pilih julat tarikh. Fail mengandungi sheet Ringkasan, Transaksi, Butiran Item, dan Perbelanjaan. Hanya transaksi yang lunas dikira.",
+    "title": "Export Laporan",
+    "description": "Pilih julat tarikh kemudian muat turun sebagai Excel (.xlsx) atau PDF (.pdf). Hanya transaksi lunas dikira.",
     "fromDate": "Dari Tarikh",
     "toDate": "Sehingga Tarikh",
     "invalidRange": "Tarikh akhir mestilah sama atau selepas tarikh mula.",
     "creating": "Membuat fail…",
     "exportButton": "Export Excel",
+    "exportExcel": "Excel (.xlsx)",
+    "exportPdf": "PDF (.pdf)",
     "invalidRangeToast": "Julat tarikh tidak sah",
     "noDataToast": "Tiada data dalam julat ini — fail tetap dibuat (kosong)",
     "successToast": "Berjaya export: {{txCount}} transaksi, {{expenseCount}} perbelanjaan",
-    "errorToast": "Gagal membuat fail Excel"
+    "errorToast": "Gagal membuat fail laporan"
   },
   "dailyReceipt": {
     "title": "Resit Laporan Penutup",

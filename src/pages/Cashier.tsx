@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, isStockManaged, type Product, type Category, type Transaction, type TransactionItemRecord, type ProductOptionGroup, type ProductOption } from '@/lib/db';
+import { db, isStockManaged, type Product, type Category, type Transaction, type ReceiptItem, type ProductOptionGroup, type ProductOption, bulkAddTransactionItemsWithOptions, deleteTransactionItemsWithOptions, type SaveCartItemInput } from '@/lib/db';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, Plus, Minus, ShoppingCart, X, Percent, Tag, CreditCard, Banknote, Check, Package as PackageIcon, ClipboardList, Save, Pencil, User, Hash, Trash2, ListPlus } from 'lucide-react';
 import Receipt from '@/components/Receipt';
@@ -97,7 +97,7 @@ export default function Kasir() {
   const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
-  const [lastTxItems, setLastTxItems] = useState<TransactionItemRecord[]>([]);
+  const [lastTxItems, setLastTxItems] = useState<ReceiptItem[]>([]);
   const [customerName, setCustomerName] = useState('');
   const [customerId, setCustomerId] = useState<number | undefined>(undefined);
   const [tableNumber, setTableNumber] = useState('');
@@ -357,6 +357,20 @@ export default function Kasir() {
     return item.product.price + optionsPrice;
   };
 
+  const cartToSaveInput = (c: CartItem): SaveCartItemInput => ({
+    productId: c.product.id!,
+    productName: c.product.name,
+    quantity: c.qty,
+    unitPrice: getItemBasePrice(c),
+    hpp: c.product.hpp,
+    discountType: c.discountType,
+    discountValue: c.discountValue,
+    discountAmount: getItemDiscountAmount(c),
+    subtotal: getItemSubtotal(c),
+    notes: c.notes,
+    selectedOptions: c.selectedOptions,
+  });
+
   const subtotal = cart.reduce((sum, item) => sum + getItemSubtotal(item), 0);
   const txDiscountAmount = txDiscountType === 'percentage'
     ? subtotal * Math.min(100, Math.max(0, Number(txDiscountValue) || 0)) / 100
@@ -481,21 +495,8 @@ export default function Kasir() {
         remarks: remarks.trim() || undefined,
         date: now,
       });
-      await db.transactionItems.where('transactionId').equals(editingTxId).delete();
-      const itemRecords: TransactionItemRecord[] = cart.map(c => ({
-        transactionId: editingTxId,
-        productId: c.product.id!,
-        productName: c.product.name,
-        quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
-        discountType: c.discountType,
-        discountValue: c.discountValue,
-        discountAmount: getItemDiscountAmount(c),
-        subtotal: getItemSubtotal(c),
-        notes: c.notes,
-      }));
-      await db.transactionItems.bulkAdd(itemRecords);
+      await deleteTransactionItemsWithOptions(editingTxId);
+      const savedItems = await bulkAddTransactionItemsWithOptions(editingTxId, cart.map(cartToSaveInput));
 
       // Adjust stock deltas
       for (const cartItem of cart) {
@@ -547,20 +548,7 @@ export default function Kasir() {
 
       const txId = await db.transactions.add(txData);
 
-      const itemRecords: TransactionItemRecord[] = cart.map(c => ({
-        transactionId: txId as number,
-        productId: c.product.id!,
-        productName: c.product.name,
-        quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
-        discountType: c.discountType,
-        discountValue: c.discountValue,
-        discountAmount: getItemDiscountAmount(c),
-        subtotal: getItemSubtotal(c),
-        notes: c.notes,
-      }));
-      await db.transactionItems.bulkAdd(itemRecords);
+      await bulkAddTransactionItemsWithOptions(txId as number, cart.map(cartToSaveInput));
 
       for (const item of cart) {
         if (!isStockManaged(item.product)) continue;
@@ -612,7 +600,7 @@ export default function Kasir() {
         await db.products.update(item.productId, { stock: product.stock + item.quantity });
       }
     }
-    await db.transactionItems.where('transactionId').equals(tx.id).delete();
+    await deleteTransactionItemsWithOptions(tx.id);
     await db.transactions.delete(tx.id);
     toast.success(t('cashier.toast.billCancelled', { receiptNumber: tx.receiptNumber }));
     setCancelDialogOpen(false);
@@ -701,7 +689,7 @@ export default function Kasir() {
         });
       }
 
-      const itemRecord: TransactionItemRecord = {
+      const itemRecord: ReceiptItem = {
         transactionId: txId as number,
         productId: 0,
         productName: `Bagi Rata (Bagian ${splitPartCheckoutIndex + 1}/${numSplits})`,
@@ -780,20 +768,7 @@ export default function Kasir() {
         });
       }
 
-      const itemRecords: TransactionItemRecord[] = splitCart.map(c => ({
-        transactionId: txId as number,
-        productId: c.product.id!,
-        productName: c.product.name,
-        quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
-        discountType: c.discountType,
-        discountValue: c.discountValue,
-        discountAmount: getItemDiscountAmount(c),
-        subtotal: getItemSubtotal(c),
-        notes: c.notes,
-      }));
-      await db.transactionItems.bulkAdd(itemRecords);
+      const savedItems = await bulkAddTransactionItemsWithOptions(txId as number, splitCart.map(cartToSaveInput));
 
       for (const item of splitCart) {
         if (!isStockManaged(item.product)) continue;
@@ -803,7 +778,7 @@ export default function Kasir() {
       toast.success(t('cashier.toast.transactionSuccess', { receiptNumber }));
       trackEvent('create_transaction');
       setLastTransaction({ ...txData, id: txId as number });
-      setLastTxItems(itemRecords);
+      setLastTxItems(savedItems);
       
       // Update main cart: subtract split items
       const newCart = cart.map(c => {
@@ -871,21 +846,8 @@ export default function Kasir() {
         });
       }
 
-      await db.transactionItems.where('transactionId').equals(editingTxId).delete();
-      const itemRecords: TransactionItemRecord[] = cart.map(c => ({
-        transactionId: editingTxId,
-        productId: c.product.id!,
-        productName: c.product.name,
-        quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
-        discountType: c.discountType,
-        discountValue: c.discountValue,
-        discountAmount: getItemDiscountAmount(c),
-        subtotal: getItemSubtotal(c),
-        notes: c.notes,
-      }));
-      await db.transactionItems.bulkAdd(itemRecords);
+      await deleteTransactionItemsWithOptions(editingTxId);
+      const savedItems = await bulkAddTransactionItemsWithOptions(editingTxId, cart.map(cartToSaveInput));
 
       // Adjust stock deltas (same as saveOpenBill)
       for (const cartItem of cart) {
@@ -912,7 +874,7 @@ export default function Kasir() {
       toast.success(t('cashier.toast.transactionSuccess', { receiptNumber: updatedTx?.receiptNumber }));
       trackEvent('create_transaction');
       setLastTransaction(updatedTx || null);
-      setLastTxItems(itemRecords);
+      setLastTxItems(savedItems);
       setReceiptOpen(true);
     } else {
       const receiptNumber = `TX${Date.now()}`;
@@ -953,20 +915,7 @@ export default function Kasir() {
         });
       }
 
-      const itemRecords: TransactionItemRecord[] = cart.map(c => ({
-        transactionId: txId as number,
-        productId: c.product.id!,
-        productName: c.product.name,
-        quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
-        discountType: c.discountType,
-        discountValue: c.discountValue,
-        discountAmount: getItemDiscountAmount(c),
-        subtotal: getItemSubtotal(c),
-        notes: c.notes,
-      }));
-      await db.transactionItems.bulkAdd(itemRecords);
+      const savedItems = await bulkAddTransactionItemsWithOptions(txId as number, cart.map(cartToSaveInput));
 
       for (const item of cart) {
         if (!isStockManaged(item.product)) continue;
@@ -976,7 +925,7 @@ export default function Kasir() {
       toast.success(t('cashier.toast.transactionSuccess', { receiptNumber }));
       trackEvent('create_transaction');
       setLastTransaction({ ...txData, id: txId as number });
-      setLastTxItems(itemRecords);
+      setLastTxItems(savedItems);
       setReceiptOpen(true);
     }
 

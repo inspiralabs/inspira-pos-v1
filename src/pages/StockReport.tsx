@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/lib/db';
+import { db, isStockManaged } from '@/lib/db';
 import { useState } from 'react';
 import { Package, ArrowDownToLine, ArrowUpFromLine, TrendingUp, AlertTriangle, Warehouse, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +22,7 @@ export default function StockReport() {
   const days = Number(period);
   const since = startOfDay(subDays(new Date(), days));
 
-  const products = useLiveQuery(() => db.products.toArray());
+  const products = useLiveQuery(() => db.products.where('isDeleted').equals(0).toArray());
   const stockIns = useLiveQuery(async () => db.stockIns.where('date').aboveOrEqual(since).toArray(), [days]);
   const stockOuts = useLiveQuery(async () => db.stockOuts.where('date').aboveOrEqual(since).toArray(), [days]);
 
@@ -30,6 +30,7 @@ export default function StockReport() {
     return <LockedPage title={t('stockReport.locked.title')} permissionLabel={t('stockReport.locked.permissionLabel')} />;
   }
 
+  const stockManagedProducts = products?.filter((p) => isStockManaged(p)) ?? [];
   const totalStockIn = stockIns?.reduce((s, si) => s + si.quantity, 0) ?? 0;
   const totalStockInValue = stockIns?.reduce((s, si) => s + si.totalPrice, 0) ?? 0;
   const totalStockOut = stockOuts?.reduce((s, so) => s + so.quantity, 0) ?? 0;
@@ -39,9 +40,11 @@ export default function StockReport() {
     return acc;
   }, {} as Record<string, number>) ?? {};
 
-  const currentStock = products?.reduce((s, p) => s + p.stock, 0) ?? 0;
-  const lowStockProducts = products?.filter(p => p.stock > 0 && p.stock <= 5) ?? [];
-  const outOfStockProducts = products?.filter(p => p.stock === 0) ?? [];
+  const currentStock = stockManagedProducts.reduce((s, p) => s + p.stock, 0);
+  const lowStockProducts = stockManagedProducts.filter(p => p.stock > 0 && p.stock <= 5);
+  const remainingStockProducts = stockManagedProducts
+    .filter(p => p.stock > 0)
+    .sort((a, b) => a.stock - b.stock || a.name.localeCompare(b.name));
 
   const getProductName = (pid: number) => products?.find(p => p.id === pid)?.name ?? '-';
 
@@ -60,27 +63,6 @@ export default function StockReport() {
       if (map[d]) map[d].stockOut += so.quantity;
     });
     return Object.entries(map).map(([date, data]) => ({ date, ...data }));
-  })();
-
-  const stockMovementData = (() => {
-    const map: Record<string, number> = {};
-    let cumulative = 0;
-    for (let i = days - 1; i >= 0; i--) {
-      const d = format(subDays(new Date(), i), 'dd/MM');
-      map[d] = 0;
-    }
-    stockIns?.forEach(si => {
-      const d = format(new Date(si.date), 'dd/MM');
-      if (map[d] !== undefined) map[d] += si.quantity;
-    });
-    stockOuts?.forEach(so => {
-      const d = format(new Date(so.date), 'dd/MM');
-      if (map[d] !== undefined) map[d] -= so.quantity;
-    });
-    return Object.entries(map).map(([date, movement]) => {
-      cumulative += movement;
-      return { date, stock: cumulative };
-    });
   })();
 
   const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
@@ -134,7 +116,7 @@ export default function StockReport() {
           <CardContent className="p-3 text-center">
             <Package className="w-4 h-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{currentStock}</p>
-            <p className="text-[10px] text-muted-foreground">{t('stockReport.summary.available')}</p>
+            <p className="text-[10px] text-muted-foreground">{t('stockReport.summary.remaining')}</p>
           </CardContent>
         </Card>
       </div>
@@ -228,25 +210,25 @@ export default function StockReport() {
         </Card>
       )}
 
-      {/* Out of Stock */}
-      {outOfStockProducts.length > 0 && (
-        <Card className="border-0 shadow-sm border-destructive/50">
+      {/* Sisa Stok per Produk */}
+      {remainingStockProducts.length > 0 && (
+        <Card className="border-0 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-1.5 text-destructive">
-              <Package className="w-4 h-4" />
-              {t('stockReport.outOfStock.title', { count: outOfStockProducts.length })}
+            <CardTitle className="text-sm flex items-center gap-1.5">
+              <Package className="w-4 h-4 text-primary" />
+              {t('stockReport.remainingStock.title', { count: remainingStockProducts.length })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {outOfStockProducts.slice(0, 5).map(p => (
+            {remainingStockProducts.slice(0, 10).map(p => (
               <div key={p.id} className="flex items-center justify-between">
                 <span className="text-sm truncate flex-1">{p.name}</span>
-                <span className="text-xs text-destructive">0 {p.unit}</span>
+                <span className="text-sm font-bold text-primary">{p.stock} {p.unit}</span>
               </div>
             ))}
-            {outOfStockProducts.length > 5 && (
+            {remainingStockProducts.length > 10 && (
               <p className="text-xs text-muted-foreground text-center">
-                {t('stockReport.lowStock.more', { count: outOfStockProducts.length - 5 })}
+                {t('stockReport.lowStock.more', { count: remainingStockProducts.length - 10 })}
               </p>
             )}
           </CardContent>

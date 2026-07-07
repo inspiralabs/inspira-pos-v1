@@ -163,13 +163,24 @@ export default function Laporan() {
 
   const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
 
-  const handlePrintDailyReport = () => {
+  const handlePrintClosingReport = () => {
     const itemsCount = allItems.reduce((s, item) => s + item.quantity, 0);
-    const formattedDate = format(new Date(`${selectedDate}T00:00:00`), 'dd-MM-yyyy');
-    
+    const dateStr = period === 'daily'
+      ? format(new Date(`${selectedDate}T00:00:00`), 'dd-MM-yyyy')
+      : `${format(dateRange.start, 'dd-MM-yyyy')}_${format(dateRange.end, 'dd-MM-yyyy')}`;
+    const periodStr = period === 'daily'
+      ? `${format(new Date(`${selectedDate}T00:00:00`), 'dd-MM-yyyy')} 00:00 - 23:59`
+      : `${format(dateRange.start, 'dd/MM/yyyy')} - ${format(dateRange.end, 'dd/MM/yyyy')}`;
+    const periodLabel = period === 'daily'
+      ? t('tabs.daily')
+      : period === '7'
+        ? t('tabs.7days')
+        : t('tabs.30days');
+
     const data: DailyReportPrintData = {
-      dateStr: formattedDate,
-      periodStr: `${formattedDate} 00:00 - 23:59`,
+      dateStr,
+      periodStr,
+      periodLabel,
       txCount,
       itemCount: itemsCount,
       grossSales: totalRevenue,
@@ -236,11 +247,7 @@ export default function Laporan() {
         <TabsList className="w-full">
           <TabsTrigger value="daily" className="flex-1">{t('tabs.daily')}</TabsTrigger>
           <TabsTrigger value="7" className="flex-1">{t('tabs.7days')}</TabsTrigger>
-          <div className="flex-1 flex">
-            <ProGate featureKey="report_30_days">
-              <TabsTrigger value="30" className="w-full h-full">{t('tabs.30days')}</TabsTrigger>
-            </ProGate>
-          </div>
+          <TabsTrigger value="30" className="flex-1">{t('tabs.30days')}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -265,7 +272,7 @@ export default function Laporan() {
             </div>
             <Button
               className="w-full gap-2 mt-2"
-              onClick={handlePrintDailyReport}
+              onClick={handlePrintClosingReport}
               disabled={txCount === 0}
             >
               <Printer className="w-4 h-4" />
@@ -274,6 +281,33 @@ export default function Laporan() {
             {txCount === 0 && (
               <p className="text-[10px] text-destructive text-center mt-1.5 font-medium">
                 {t('daily.noSalesSelectedDate')}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {(period === '7' || period === '30') && (
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+              <div>
+                <Label htmlFor="include-expenses-period" className="text-sm font-medium">{t('daily.includeExpenses')}</Label>
+                <p className="text-[10px] text-muted-foreground">{t('daily.includeExpensesHint')}</p>
+              </div>
+              <Switch id="include-expenses-period" checked={includeExpenses} onCheckedChange={setIncludeExpenses} />
+            </div>
+            <Button
+              className="w-full gap-2"
+              onClick={handlePrintClosingReport}
+              disabled={txCount === 0}
+            >
+              <Printer className="w-4 h-4" />
+              {t('periodClosing.print', { period: period === '7' ? t('tabs.7days') : t('tabs.30days') })}
+            </Button>
+            {txCount === 0 && (
+              <p className="text-[10px] text-destructive text-center font-medium">
+                {t('periodClosing.noSales')}
               </p>
             )}
           </CardContent>

@@ -802,7 +802,8 @@
     "summary": {
       "in": "Masuk",
       "out": "Keluar",
-      "available": "Tersedia"
+      "available": "Tersedia",
+      "remaining": "Sisa Stok"
     },
     "stockInValue": {
       "title": "Nilai Stok Masuk",
@@ -832,6 +833,9 @@
     },
     "outOfStock": {
       "title": "Stok Habis ({{count}})"
+    },
+    "remainingStock": {
+      "title": "Sisa Stok ({{count}})"
     }
   },
   "backupRestore": {

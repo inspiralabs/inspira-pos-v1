@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { DatePicker, parseDateString, toDateString } from '@/components/ui/date-picker';
-import { exportReportToExcel } from '@/lib/export-report';
+import { exportReportToExcel, exportReportToPdf } from '@/lib/export-report';
 
 interface ExportReportDialogProps {
   open: boolean;
@@ -35,7 +35,7 @@ export default function ExportReportDialog({
   const { t } = useTranslation('reports');
   const [startDate, setStartDate] = useState(() => format(defaultStartMs, 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(() => format(defaultEndMs, 'yyyy-MM-dd'));
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<'excel' | 'pdf' | null>(null);
 
   // Sinkronkan input dengan periode aktif setiap kali dialog dibuka, atau saat
   // periode aktif berubah.
@@ -48,17 +48,18 @@ export default function ExportReportDialog({
 
   const invalidRange = !startDate || !endDate || startDate > endDate;
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'excel' | 'pdf') => {
     if (invalidRange) {
       toast.error(t('exportDialog.invalidRangeToast'));
       return;
     }
-    setExporting(true);
+    setExporting(format);
     try {
-      const result = await exportReportToExcel(
-        new Date(`${startDate}T00:00:00`),
-        new Date(`${endDate}T00:00:00`),
-      );
+      const rangeStart = new Date(`${startDate}T00:00:00`);
+      const rangeEnd = new Date(`${endDate}T00:00:00`);
+      const result = format === 'excel'
+        ? await exportReportToExcel(rangeStart, rangeEnd)
+        : await exportReportToPdf(rangeStart, rangeEnd);
       if (result.txCount === 0 && result.expenseCount === 0) {
         toast.info(t('exportDialog.noDataToast'));
       } else {
@@ -71,7 +72,7 @@ export default function ExportReportDialog({
       console.error('Export laporan gagal:', err);
       toast.error(t('exportDialog.errorToast'));
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -120,21 +121,33 @@ export default function ExportReportDialog({
             </p>
           )}
 
-          <Button
-            className="w-full h-12 text-base font-semibold gap-2"
-            onClick={handleExport}
-            disabled={exporting || invalidRange}
-          >
-            {exporting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> {t('exportDialog.creating')}
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" /> {t('exportDialog.exportButton')}
-              </>
-            )}
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              className="h-12 text-sm font-semibold gap-2"
+              onClick={() => handleExport('excel')}
+              disabled={!!exporting || invalidRange}
+            >
+              {exporting === 'excel' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {t('exportDialog.exportExcel')}
+            </Button>
+            <Button
+              variant="outline"
+              className="h-12 text-sm font-semibold gap-2"
+              onClick={() => handleExport('pdf')}
+              disabled={!!exporting || invalidRange}
+            >
+              {exporting === 'pdf' ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {t('exportDialog.exportPdf')}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

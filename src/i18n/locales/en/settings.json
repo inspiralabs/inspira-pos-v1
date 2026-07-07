@@ -802,7 +802,8 @@
     "summary": {
       "in": "In",
       "out": "Out",
-      "available": "Available"
+      "available": "Available",
+      "remaining": "Remaining Stock"
     },
     "stockInValue": {
       "title": "Stock In Value",
@@ -832,6 +833,9 @@
     },
     "outOfStock": {
       "title": "Out of Stock ({{count}})"
+    },
+    "remainingStock": {
+      "title": "Remaining Stock ({{count}})"
     }
   },
   "backupRestore": {

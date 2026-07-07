@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { format } from 'date-fns';
-import type { Transaction, StoreSettings, TransactionItemRecord } from './db';
+import type { Transaction, StoreSettings, ReceiptItem } from './db';
 
 declare global {
   interface Window {
@@ -22,7 +22,7 @@ export interface BluetoothPrinter {
 
 interface PrintData {
   transaction: Transaction;
-  items: TransactionItemRecord[];
+  items: ReceiptItem[];
   storeSettings: StoreSettings | undefined;
   paymentMethodName: string;
   cashierName?: string;
@@ -104,6 +104,10 @@ export const getESCPOSData = ({
   const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
   for (const item of items) {
     lines.push(`${item.productName}\n`);
+    for (const opt of item.options ?? []) {
+      const extra = opt.additionalPrice > 0 ? ` (+${rp(opt.additionalPrice)})` : '';
+      lines.push(`  ${opt.optionGroupName}: ${opt.optionName}${extra}\n`);
+    }
     if (item.notes) lines.push(`  ${item.notes}\n`);
     lines.push(`  ${item.quantity} x ${rp(item.price)}  ${rp(item.subtotal)}\n`);
   }
@@ -130,6 +134,7 @@ export const getESCPOSData = ({
 export interface DailyReportPrintData {
   dateStr: string;
   periodStr: string;
+  periodLabel?: string;
   txCount: number;
   itemCount: number;
   grossSales: number;

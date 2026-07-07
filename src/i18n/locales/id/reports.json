@@ -17,6 +17,10 @@
     "printClosingReport": "Cetak Laporan Closing",
     "noSalesSelectedDate": "* Belum ada transaksi penjualan pada tanggal terpilih"
   },
+  "periodClosing": {
+    "print": "Cetak Laporan Closing {{period}}",
+    "noSales": "* Belum ada transaksi penjualan pada periode ini"
+  },
   "summary": {
     "transactions": "Transaksi",
     "sales": "Penjualan",
@@ -65,17 +69,19 @@
   },
   "currency": "Rp {{amount}}",
   "exportDialog": {
-    "title": "Export Laporan ke Excel",
-    "description": "Pilih rentang tanggal. File berisi sheet Ringkasan, Transaksi, Detail Item, dan Pengeluaran. Hanya transaksi lunas yang dihitung.",
+    "title": "Export Laporan",
+    "description": "Pilih rentang tanggal lalu unduh sebagai Excel (.xlsx) atau PDF (.pdf). Hanya transaksi lunas yang dihitung.",
     "fromDate": "Dari Tanggal",
     "toDate": "Sampai Tanggal",
     "invalidRange": "Tanggal akhir harus sama atau setelah tanggal mulai.",
     "creating": "Membuat file…",
     "exportButton": "Export Excel",
+    "exportExcel": "Excel (.xlsx)",
+    "exportPdf": "PDF (.pdf)",
     "invalidRangeToast": "Rentang tanggal tidak valid",
     "noDataToast": "Tidak ada data pada rentang ini — file tetap dibuat (kosong)",
     "successToast": "Berhasil export: {{txCount}} transaksi, {{expenseCount}} pengeluaran",
-    "errorToast": "Gagal membuat file Excel"
+    "errorToast": "Gagal membuat file laporan"
   },
   "dailyReceipt": {
     "title": "Struk Laporan Closing",

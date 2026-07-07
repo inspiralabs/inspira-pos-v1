@@ -30,6 +30,8 @@ export interface ExportResult {
 const XLSX_MIME =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
+const PDF_MIME = 'application/pdf';
+
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = '';
@@ -44,7 +46,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
  * Simpan / bagikan file. Di web: unduh lewat anchor. Di native (Capacitor):
  * tulis ke cache lalu buka dialog Share Android — mengikuti pola backup.
  */
-async function saveFile(buffer: ArrayBuffer, fileName: string): Promise<void> {
+async function saveFile(buffer: ArrayBuffer, fileName: string, mime = XLSX_MIME): Promise<void> {
   if (Capacitor.isNativePlatform()) {
     const result = await Filesystem.writeFile({
       path: fileName,
@@ -52,7 +54,7 @@ async function saveFile(buffer: ArrayBuffer, fileName: string): Promise<void> {
       directory: Directory.Cache,
     });
     await Share.share({
-      title: 'Laporan Excel',
+      title: mime === PDF_MIME ? 'Laporan PDF' : 'Laporan Excel',
       text: fileName,
       url: result.uri,
       dialogTitle: 'Simpan / Bagikan Laporan',
@@ -60,7 +62,7 @@ async function saveFile(buffer: ArrayBuffer, fileName: string): Promise<void> {
     return;
   }
 
-  const blob = new Blob([buffer], { type: XLSX_MIME });
+  const blob = new Blob([buffer], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -75,12 +77,10 @@ function sanitizeForFileName(name: string): string {
   return name.trim().replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_') || 'Toko';
 }
 
-export async function exportReportToExcel(rangeStart: Date, rangeEnd: Date): Promise<ExportResult> {
-  // Normalisasi batas hari supaya inklusif (00:00:00 s/d 23:59:59.999).
+async function fetchReportData(rangeStart: Date, rangeEnd: Date) {
   const start = startOfDay(rangeStart);
   const end = endOfDay(rangeEnd);
 
-  // --- Ambil data ---
   const [allTx, expensesRaw, debtPayments, paymentMethods, expenseCategories, users, storeSettings] =
     await Promise.all([
       db.transactions.where('date').between(start, end, true, true).toArray(),
@@ -105,7 +105,6 @@ export async function exportReportToExcel(rangeStart: Date, rangeEnd: Date): Pro
       ? await db.transactionItems.where('transactionId').anyOf(txIds).toArray()
       : [];
 
-  // --- Lookup helpers ---
   const paymentName = (id?: number) =>
     paymentMethods.find((p) => p.id === id)?.name ?? 'Tanpa metode';
   const categoryName = (id: number) =>
@@ -113,26 +112,17 @@ export async function exportReportToExcel(rangeStart: Date, rangeEnd: Date): Pro
   const cashierName = (id?: number) =>
     id != null ? users.find((u) => u.id === id)?.name ?? '-' : '-';
   const txById = new Map(transactions.map((t) => [t.id, t] as const));
-
   const storeName = storeSettings?.storeName?.trim() || 'Kasir';
 
-  // --- Agregasi untuk sheet Ringkasan ---
   const totalSales = transactions.reduce((s, t) => s + t.total, 0);
-  const totalProfit = transactions.reduce((s, t) => s + t.profit, 0);
   const totalRevenue = transactions.reduce((s, t) => s + t.subtotal, 0);
   const totalDiscount = transactions.reduce((s, t) => s + t.discountAmount, 0);
   const totalHpp = items.reduce((s, i) => s + i.hpp * i.quantity, 0);
   const netSales = totalRevenue - totalDiscount;
   const grossProfit = netSales - totalHpp;
-  const grossMargin = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
   const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-  const totalCashIn =
-    transactions.reduce((sum, transaction) => sum + Math.min(transaction.paymentAmount, transaction.total), 0) +
-    debtPayments.reduce((sum, payment) => sum + payment.amount, 0);
   const netProfit = grossProfit - totalExpenses;
-  const netMargin = netSales > 0 ? (netProfit / netSales) * 100 : 0;
 
-  // Breakdown metode bayar (penjualan).
   const paymentSummary = new Map<string, { amount: number; count: number }>();
   for (const t of transactions) {
     if (t.paymentAmount <= 0) continue;
@@ -150,7 +140,44 @@ export async function exportReportToExcel(rangeStart: Date, rangeEnd: Date): Pro
     paymentSummary.set(key, cur);
   }
 
-  // Pengeluaran per kategori.
+  return {
+    start,
+    end,
+    storeName,
+    transactions,
+    expenses,
+    debtPayments,
+    items,
+    txById,
+    paymentName,
+    categoryName,
+    cashierName,
+    totalSales,
+    totalRevenue,
+    totalDiscount,
+    netSales,
+    grossProfit,
+    totalExpenses,
+    netProfit,
+    paymentSummary,
+  };
+}
+
+const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+
+export async function exportReportToExcel(rangeStart: Date, rangeEnd: Date): Promise<ExportResult> {
+  const d = await fetchReportData(rangeStart, rangeEnd);
+  const {
+    start, end, storeName, transactions, expenses, debtPayments, items, paymentName, categoryName, cashierName, txById,
+    totalSales, totalRevenue, totalDiscount, netSales, grossProfit, totalExpenses, netProfit, paymentSummary,
+  } = d;
+  const totalHpp = items.reduce((s, i) => s + i.hpp * i.quantity, 0);
+  const totalProfit = transactions.reduce((s, t) => s + t.profit, 0);
+  const grossMargin = netSales > 0 ? (grossProfit / netSales) * 100 : 0;
+  const netMargin = netSales > 0 ? (netProfit / netSales) * 100 : 0;
+  const totalCashIn =
+    transactions.reduce((sum, t) => sum + Math.min(t.paymentAmount, t.total), 0) +
+    debtPayments.reduce((sum, p) => sum + p.amount, 0);
   const expenseSummary = new Map<string, number>();
   for (const e of expenses) {
     const key = categoryName(e.categoryId);
@@ -195,6 +222,62 @@ export async function exportReportToExcel(rangeStart: Date, rangeEnd: Date): Pro
     'yyyy-MM-dd',
   )}.xlsx`;
   await saveFile(buffer as ArrayBuffer, fileName);
+
+  return {
+    fileName,
+    txCount: transactions.length,
+    itemCount: items.length,
+    expenseCount: expenses.length,
+  };
+}
+
+export async function exportReportToPdf(rangeStart: Date, rangeEnd: Date): Promise<ExportResult> {
+  const d = await fetchReportData(rangeStart, rangeEnd);
+  const { start, end, storeName, transactions, expenses, items, paymentName, categoryName, cashierName } = d;
+
+  const { jsPDF } = await import('jspdf');
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  let y = 14;
+  const line = (text: string, bold = false, size = 10) => {
+    if (y > 280) {
+      doc.addPage();
+      y = 14;
+    }
+    doc.setFontSize(size);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.text(text, 14, y);
+    y += size * 0.45 + 2;
+  };
+
+  line(`Laporan ${storeName}`, true, 14);
+  line(`Periode: ${format(start, 'dd/MM/yyyy')} – ${format(end, 'dd/MM/yyyy')}`);
+  line(`Transaksi: ${transactions.length} | Item: ${items.length}`);
+  y += 2;
+  line(`Penjualan Bersih: ${rp(d.netSales)}`, true);
+  line(`Laba Kotor: ${rp(d.grossProfit)}`);
+  line(`Pengeluaran: ${rp(d.totalExpenses)}`);
+  line(`Laba Bersih: ${rp(d.netProfit)}`, true);
+  y += 2;
+  line('Metode Bayar', true);
+  if (d.paymentSummary.size === 0) line('—');
+  for (const [name, v] of [...d.paymentSummary.entries()].sort((a, b) => b[1].amount - a[1].amount)) {
+    line(`${name}: ${rp(v.amount)} (${v.count} trx)`);
+  }
+  y += 2;
+  line('Transaksi', true, 12);
+  for (const t of transactions.slice(0, 80)) {
+    line(`${format(new Date(t.date), 'dd/MM HH:mm')} ${t.receiptNumber} ${rp(t.total)} — ${cashierName(t.createdBy)}`);
+  }
+  if (transactions.length > 80) line(`… +${transactions.length - 80} transaksi lainnya`);
+  y += 2;
+  line('Pengeluaran', true, 12);
+  for (const e of expenses.slice(0, 40)) {
+    line(`${format(new Date(e.date), 'dd/MM')} ${e.title} ${rp(e.amount)} (${categoryName(e.categoryId)})`);
+  }
+
+  const buffer = doc.output('arraybuffer');
+  const fileName = `Laporan_${sanitizeForFileName(storeName)}_${format(start, 'yyyy-MM-dd')}_${format(end, 'yyyy-MM-dd')}.pdf`;
+  await saveFile(buffer, fileName, PDF_MIME);
 
   return {
     fileName,

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import type { Transaction, StoreSettings, TransactionItemRecord } from '@/lib/db';
+import type { Transaction, StoreSettings, ReceiptItem } from '@/lib/db';
 import { isNativePlatform, printNativeBluetooth, getESCPOSData } from '@/lib/printer';
 
 const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
@@ -18,7 +18,7 @@ interface ReceiptProps {
   open: boolean;
   onClose: () => void;
   transaction: Transaction;
-  items: TransactionItemRecord[];
+  items: ReceiptItem[];
   storeSettings: StoreSettings | undefined;
   paymentMethodName: string;
   cashierName?: string;
@@ -218,7 +218,12 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#666', marginTop: '1px' }}>
                   <span>{item.quantity} × {rp(item.price)}</span>
                 </div>
-                {/* Notes (sub-menu selections stored as notes) */}
+                {item.options?.map((opt, oi) => (
+                  <p key={oi} style={{ fontSize: '9px', color: '#b92a1c', fontWeight: 600, marginTop: '2px', margin: 0 }}>
+                    ↳ {opt.optionGroupName}: {opt.optionName}
+                    {opt.additionalPrice > 0 ? ` (+${rp(opt.additionalPrice)})` : ''}
+                  </p>
+                ))}
                 {item.notes && (
                   <p style={{ fontSize: '9px', color: '#b92a1c', fontStyle: 'italic', marginTop: '2px', margin: 0 }}>
                     ↳ {item.notes}

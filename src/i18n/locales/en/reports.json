@@ -17,6 +17,10 @@
     "printClosingReport": "Print Closing Report",
     "noSalesSelectedDate": "* No sales transactions on selected date"
   },
+  "periodClosing": {
+    "print": "Print Closing Report {{period}}",
+    "noSales": "* No sales transactions in this period"
+  },
   "summary": {
     "transactions": "Transactions",
     "sales": "Sales",
@@ -65,17 +69,19 @@
   },
   "currency": "Rp {{amount}}",
   "exportDialog": {
-    "title": "Export Report to Excel",
-    "description": "Select a date range. The file contains Summary, Transactions, Item Details, and Expenses sheets. Only paid transactions are counted.",
+    "title": "Export Report",
+    "description": "Select a date range, then download as Excel (.xlsx) or PDF (.pdf). Only completed transactions are counted.",
     "fromDate": "From Date",
     "toDate": "To Date",
     "invalidRange": "End date must be the same as or after start date.",
     "creating": "Creating file…",
     "exportButton": "Export Excel",
+    "exportExcel": "Excel (.xlsx)",
+    "exportPdf": "PDF (.pdf)",
     "invalidRangeToast": "Invalid date range",
     "noDataToast": "No data in this range — file will still be created (empty)",
     "successToast": "Export successful: {{txCount}} transactions, {{expenseCount}} expenses",
-    "errorToast": "Failed to create Excel file"
+    "errorToast": "Failed to create report file"
   },
   "dailyReceipt": {
     "title": "Closing Report Receipt",

@@ -29,6 +29,7 @@ export async function buildBackupData() {
     paymentMethods: await db.paymentMethods.toArray(),
     transactions: await db.transactions.toArray(),
     transactionItems: await db.transactionItems.toArray(),
+    transactionItemOptions: await db.transactionItemOptions.toArray(),
     storeSettings: await db.storeSettings.toArray(),
     users: await db.users.toArray(),
     units: await db.units.toArray(),
@@ -97,6 +98,7 @@ async function clearAllTables(includeConditional: BackupData) {
   await db.paymentMethods.clear();
   await db.transactions.clear();
   await db.transactionItems.clear();
+  await db.transactionItemOptions.clear();
   await db.storeSettings.clear();
   // Preserve user accounts when restoring older backups (v1–v3) tanpa tabel users.
   if (Array.isArray(includeConditional.users)) await db.users.clear();
@@ -145,6 +147,7 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
     paymentMethods: await db.paymentMethods.toArray(),
     transactions: await db.transactions.toArray(),
     transactionItems: await db.transactionItems.toArray(),
+    transactionItemOptions: await db.transactionItemOptions.toArray(),
     storeSettings: await db.storeSettings.toArray(),
     users: await db.users.toArray(),
     units: await db.units.toArray(),
@@ -217,7 +220,6 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
       await db.storeSettings.update(restoredSettings.id, { cloudStoreId: null });
     }
 
-    // transactionItems (v2+) atau migrasi dari items[] embedded (v1).
     if (data.transactionItems?.length) {
       await db.transactionItems.bulkAdd(data.transactionItems);
     } else if (data.version === 1 && data.transactions?.length) {
@@ -240,12 +242,16 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
         }
       }
     }
+    if (data.transactionItemOptions?.length) {
+      await db.transactionItemOptions.bulkAdd(data.transactionItemOptions);
+    }
   } catch (importErr) {
     // Rollback ke snapshot.
     try {
       await db.categories.clear(); await db.products.clear(); await db.suppliers.clear();
       await db.stockIns.clear(); await db.stockOuts.clear(); await db.hppHistory.clear();
       await db.paymentMethods.clear(); await db.transactions.clear(); await db.transactionItems.clear();
+      await db.transactionItemOptions.clear();
       await db.storeSettings.clear();
       await db.users.clear();
       await db.units.clear();
@@ -268,6 +274,7 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
       if (snapshot.paymentMethods.length) await db.paymentMethods.bulkAdd(snapshot.paymentMethods);
       if (snapshot.transactions.length) await db.transactions.bulkAdd(snapshot.transactions);
       if (snapshot.transactionItems.length) await db.transactionItems.bulkAdd(snapshot.transactionItems);
+      if (snapshot.transactionItemOptions?.length) await db.transactionItemOptions.bulkAdd(snapshot.transactionItemOptions);
       if (snapshot.storeSettings.length) await db.storeSettings.bulkAdd(snapshot.storeSettings);
       if (snapshot.users.length) await db.users.bulkAdd(snapshot.users);
       if (snapshot.units.length) await db.units.bulkAdd(snapshot.units);
