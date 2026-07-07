@@ -6,7 +6,7 @@
     },
     "cashier": {
       "title": "Take orders",
-      "description": ""
+      "description": "Prepare orders, print receipts, and take payments here."
     },
     "stock": {
       "title": "Stock updates itself",

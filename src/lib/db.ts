@@ -897,6 +897,29 @@ export function isStockManaged(product: Pick<Product, 'trackStock'>): boolean {
   return product.trackStock !== false;
 }
 
+/** Pastikan SKU unik sebelum bulkAdd (duplikat dalam batch atau vs existing). */
+export function uniquifyProductSkus<T extends Pick<Product, 'sku'>>(
+  products: T[],
+  existingSkus: Iterable<string> = [],
+): T[] {
+  const seen = new Set(
+    [...existingSkus].map((s) => s.trim()).filter(Boolean),
+  );
+  return products.map((p, i) => {
+    let sku = (p.sku ?? '').trim();
+    if (!sku) sku = `SKU-${Date.now()}-${i}`;
+    if (!seen.has(sku)) {
+      seen.add(sku);
+      return sku === p.sku ? p : { ...p, sku };
+    }
+    let n = 1;
+    while (seen.has(`${sku}_dup${n}`)) n++;
+    const unique = `${sku}_dup${n}`;
+    seen.add(unique);
+    return { ...p, sku: unique };
+  });
+}
+
 // Seed default data
 export async function seedDefaultData() {
   const categoryCount = await db.categories.count();

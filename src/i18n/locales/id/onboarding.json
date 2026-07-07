@@ -6,7 +6,7 @@
     },
     "cashier": {
       "title": "Terima pesanan",
-      "description": ""
+      "description": "Siapkan pesanan, cetak struk, dan kasir langsung di sini."
     },
     "stock": {
       "title": "Stok berkurang sendiri",

@@ -201,6 +201,10 @@ export async function seedUmkmDummy(typeId: UmkmTypeId): Promise<void> {
   const { products, suppliers, transactions } = PROFILES[typeId];
   const t = now();
 
+  const demoSkus = products.map((p) => p.sku);
+  const alreadySeeded = await db.products.where('sku').anyOf(demoSkus).first();
+  if (alreadySeeded) return;
+
   await ensureUnits([...new Set(products.map((p) => p.unit))]);
 
   const productRows = products.map((p) => ({

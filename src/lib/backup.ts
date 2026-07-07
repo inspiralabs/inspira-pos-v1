@@ -1,4 +1,4 @@
-import { db, type Product } from '@/lib/db';
+import { db, type Product, uniquifyProductSkus } from '@/lib/db';
 
 /**
  * Shared backup/restore core, dipakai oleh:
@@ -162,8 +162,10 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
 
     if (data.categories?.length) await db.categories.bulkAdd(data.categories);
     if (data.products?.length) {
-      const normalizedProducts = (data.products as Product[]).map((p) =>
-        p && p.trackStock === undefined ? { ...p, trackStock: true } : p,
+      const normalizedProducts = uniquifyProductSkus(
+        (data.products as Product[]).map((p) =>
+          p && p.trackStock === undefined ? { ...p, trackStock: true } : p,
+        ),
       );
       await db.products.bulkAdd(normalizedProducts);
     }

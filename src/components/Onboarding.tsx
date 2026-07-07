@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { db, type Product } from '@/lib/db';
+import { db, type Product, uniquifyProductSkus } from '@/lib/db';
 import { TRIAL_LIMITS } from '@/lib/trial-limits';
 import { UMKM_TYPES, seedUmkmDummy, type UmkmTypeId } from '@/lib/umkm-dummy-data';
 import { cn } from '@/lib/utils';
@@ -143,8 +143,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
         if (data.categories?.length) await db.categories.bulkAdd(data.categories);
         if (data.products?.length) {
-          const normalized = (data.products as Product[]).map((p) =>
-            p && p.trackStock === undefined ? { ...p, trackStock: true } : p,
+          const normalized = uniquifyProductSkus(
+            (data.products as Product[]).map((p) =>
+              p && p.trackStock === undefined ? { ...p, trackStock: true } : p,
+            ),
           );
           await db.products.bulkAdd(normalized);
         }
