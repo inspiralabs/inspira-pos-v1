@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === "development" && componentTagger(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["inspirapos-icon.ico", "inspirapos-icon.jpeg", "og-image.jpeg"],
       manifest: {
         name: "Inspira POS",

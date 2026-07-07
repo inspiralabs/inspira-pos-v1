@@ -10,36 +10,45 @@ import { db, type Product, uniquifyProductSkus, uniquifyReceiptNumbers } from '@
 
 export const BACKUP_VERSION = 7;
 
+// ponytail: satu daftar pusat tabel backup; tambah tabel baru cukup di sini.
+export const BACKUP_TABLE_KEYS = [
+  'categories',
+  'products',
+  'suppliers',
+  'customers',
+  'stockIns',
+  'stockOuts',
+  'hppHistory',
+  'paymentMethods',
+  'transactions',
+  'transactionItems',
+  'transactionItemOptions',
+  'storeSettings',
+  'users',
+  'units',
+  'expenseCategories',
+  'expenses',
+  'debts',
+  'debtPayments',
+  'productOptionGroups',
+  'productOptions',
+  'productOptionLinks',
+] as const;
+
 // Bentuk longgar — file backup bisa berasal dari versi lama (v1–v6).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type BackupData = Record<string, any> & { version?: number };
 
 /** Kumpulkan seluruh isi database menjadi satu objek backup. */
 export async function buildBackupData() {
+  const tableEntries = await Promise.all(
+    BACKUP_TABLE_KEYS.map(async (key) => [key, await db[key].toArray()] as const),
+  );
+
   return {
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    categories: await db.categories.toArray(),
-    products: await db.products.toArray(),
-    suppliers: await db.suppliers.toArray(),
-    customers: await db.customers.toArray(),
-    stockIns: await db.stockIns.toArray(),
-    stockOuts: await db.stockOuts.toArray(),
-    hppHistory: await db.hppHistory.toArray(),
-    paymentMethods: await db.paymentMethods.toArray(),
-    transactions: await db.transactions.toArray(),
-    transactionItems: await db.transactionItems.toArray(),
-    transactionItemOptions: await db.transactionItemOptions.toArray(),
-    storeSettings: await db.storeSettings.toArray(),
-    users: await db.users.toArray(),
-    units: await db.units.toArray(),
-    expenseCategories: await db.expenseCategories.toArray(),
-    expenses: await db.expenses.toArray(),
-    debts: await db.debts.toArray(),
-    debtPayments: await db.debtPayments.toArray(),
-    productOptionGroups: await db.productOptionGroups.toArray(),
-    productOptions: await db.productOptions.toArray(),
-    productOptionLinks: await db.productOptionLinks.toArray(),
+    ...Object.fromEntries(tableEntries),
   };
 }
 

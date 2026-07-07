@@ -63,6 +63,11 @@
     "howToInstall": "How to Install",
     "storageUsed": "Storage Used"
   },
+  "appUpdate": {
+    "title": "New version available",
+    "description": "Reload to get the latest features and fixes.",
+    "reload": "Reload"
+  },
   "whatsNew": {
     "title": "What's New in Inspira POS",
     "slide": "Slide {{number}}",

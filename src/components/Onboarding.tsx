@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { db, type Product, uniquifyProductSkus, uniquifyReceiptNumbers } from '@/lib/db';
+import { db } from '@/lib/db';
 import { TRIAL_LIMITS } from '@/lib/trial-limits';
 import { UMKM_TYPES, seedUmkmDummy, type UmkmTypeId } from '@/lib/umkm-dummy-data';
 import { cn } from '@/lib/utils';
@@ -121,94 +121,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        if (!data.version) { toast.error(t('toast.restoreInvalidFile')); setRestoring(false); return; }
-
-        const hasSomeData = ['categories', 'products', 'suppliers', 'transactions', 'paymentMethods'].some(
-          key => Array.isArray(data[key]) && data[key].length > 0,
-        );
-        if (!hasSomeData) { toast.error(t('toast.restoreNoData')); setRestoring(false); return; }
-
-        // Fresh install: clear seeded defaults then load from file.
-        await db.categories.clear(); await db.products.clear(); await db.suppliers.clear();
-        await db.stockIns.clear(); await db.stockOuts.clear(); await db.hppHistory.clear();
-        await db.paymentMethods.clear(); await db.transactions.clear(); await db.transactionItems.clear();
-        await db.storeSettings.clear();
-        if (Array.isArray(data.users)) await db.users.clear();
-        await db.units.clear();
-        if (Array.isArray(data.expenseCategories) || Array.isArray(data.expenses)) {
-          await db.expenseCategories.clear();
-          await db.expenses.clear();
-        }
-        if (Array.isArray(data.customers)) await db.customers.clear();
-
-        if (data.categories?.length) await db.categories.bulkAdd(data.categories);
-        if (data.products?.length) {
-          const normalized = uniquifyProductSkus(
-            (data.products as Product[]).map((p) =>
-              p && p.trackStock === undefined ? { ...p, trackStock: true } : p,
-            ),
-          );
-          await db.products.bulkAdd(normalized);
-        }
-        if (data.suppliers?.length) await db.suppliers.bulkAdd(data.suppliers);
-        if (data.customers?.length) await db.customers.bulkAdd(data.customers);
-        if (data.stockIns?.length) await db.stockIns.bulkAdd(data.stockIns);
-        if (data.stockOuts?.length) await db.stockOuts.bulkAdd(data.stockOuts);
-        if (data.hppHistory?.length) await db.hppHistory.bulkAdd(data.hppHistory);
-        if (data.paymentMethods?.length) await db.paymentMethods.bulkAdd(data.paymentMethods);
-        if (data.transactions?.length) {
-          await db.transactions.bulkAdd(uniquifyReceiptNumbers(data.transactions));
-        }
-        if (data.users?.length) await db.users.bulkAdd(data.users);
-        if (data.expenseCategories?.length) await db.expenseCategories.bulkAdd(data.expenseCategories);
-        if (data.expenses?.length) await db.expenses.bulkAdd(data.expenses);
-
-        // Units (v3+ backup) or harvest from products (v1/v2 backup)
-        if (Array.isArray(data.units) && data.units.length > 0) {
-          await db.units.bulkAdd(data.units);
-        } else {
-          const now = new Date();
-          const defaults = ['pcs', 'kg', 'gram', 'liter', 'ml', 'porsi', 'cup', 'botol', 'bungkus'];
-          const seen = new Set<string>();
-          const toAdd: Array<{ name: string; isDefault: number; createdAt: Date; isDeleted: number; deletedAt: null }> = [];
-          for (const name of defaults) { seen.add(name); toAdd.push({ name, isDefault: 1, createdAt: now, isDeleted: 0, deletedAt: null }); }
-          if (Array.isArray(data.products)) {
-            for (const p of data.products as Product[]) {
-              const u = p?.unit?.trim();
-              if (!u || seen.has(u)) continue;
-              seen.add(u);
-              toAdd.push({ name: u, isDefault: 0, createdAt: now, isDeleted: 0, deletedAt: null });
-            }
-          }
-          if (toAdd.length) await db.units.bulkAdd(toAdd);
-        }
-
-        if (data.transactionItems?.length) await db.transactionItems.bulkAdd(data.transactionItems);
-
-        // Restored storeSettings carries onboardingDone from the source device.
-        // Force it true so the wizard closes and the app opens straight away.
-        if (data.storeSettings?.length) {
-          const restored = data.storeSettings.map((s: Record<string, unknown>) => ({ ...s, onboardingDone: true, appTourDone: true }));
-          await db.storeSettings.bulkAdd(restored);
-        } else {
-          await db.storeSettings.add({
-            storeName: 'Toko Saya',
-            address: '',
-            phone: '',
-            receiptFooter: 'Terima kasih atas kunjungan Anda!',
-            onboardingDone: true,
-            appTourDone: true,
-            lastBackupAt: null,
-            deviceId: crypto.randomUUID(),
-          });
-        }
-
-        const saved = await db.storeSettings.toCollection().first();
-        if (!saved?.onboardingDone) throw new Error('Gagal menyimpan pengaturan toko');
-        toast.success(t('toast.restoreSuccess'));
-        onComplete();
-      } catch {
-        toast.error(t('toast.restoreError'));
+        await restoreFromBackupData(data);
+        await finishAfterRestore(t('toast.restoreSuccess'));
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : t('toast.restoreError'));
       } finally {
         setRestoring(false);
       }

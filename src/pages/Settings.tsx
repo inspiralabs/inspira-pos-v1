@@ -789,6 +789,7 @@ export default function Pengaturan() {
         <CardContent className="p-4 text-center space-y-2">
            <p className="text-sm font-bold">INSPIRA POS</p>
            <p className="text-xs text-muted-foreground">Smart POS untuk UMKM Indonesia 🇮🇩</p>
+           <p className="text-[10px] text-muted-foreground">{t('about.version', { version: APP_VERSION })}</p>
             <p className="text-[10px] text-muted-foreground">
               Powered by{' '}
               <a href="https://inspiralabs.id/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">

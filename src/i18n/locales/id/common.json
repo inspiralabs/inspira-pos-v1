@@ -63,6 +63,11 @@
     "howToInstall": "Cara Install",
     "storageUsed": "Penyimpanan Terpakai"
   },
+  "appUpdate": {
+    "title": "Versi baru tersedia",
+    "description": "Muat ulang untuk mendapatkan fitur dan perbaikan terbaru.",
+    "reload": "Muat ulang"
+  },
   "whatsNew": {
     "title": "Yang Baru di Inspira POS",
     "slide": "Slide {{number}}",

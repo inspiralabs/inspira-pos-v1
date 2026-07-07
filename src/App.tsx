@@ -12,6 +12,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { CloudAuthProvider } from "@/hooks/use-cloud-auth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import PwaUpdatePrompt from "@/components/PwaUpdatePrompt";
 import { I18nextProvider } from "react-i18next";
 import i18n from "./i18n";
 import AppLayout from "./components/layout/AppLayout";
@@ -65,6 +66,7 @@ const App = () => {
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <PwaUpdatePrompt />
             <BrowserRouter>
               <AuthProvider>
                <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
